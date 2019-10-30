@@ -8,13 +8,13 @@ import random
 
 f = open('../data/layer1.json')
 
-test_files = []
-train_files = []
+#test_files = []
+#train_files = []
 
-for i in range(0,10):
-	test_files.append(open('../data/test' + str(i) + '.json', 'w+'))
-	train_files.append(open('../data/train' + str(i) + '.json', 'w+'))
-	print(i)
+#for i in range(0,10):
+#	test_files.append(open('../data/test' + str(i) + '.json', 'w+'))
+#	train_files.append(open('../data/train' + str(i) + '.json', 'w+'))
+#	print(i)
 
 
 parser = ijson.parse(f)
@@ -23,7 +23,11 @@ newitem = {}
 
 print("Creating train and test sets.")
 
-index = 0
+trainCounter = 0
+testCounter = 0
+
+currentTrainFile = []
+currentTestFile = []
 
 for prefix, event,value in parser:
 
@@ -47,26 +51,32 @@ for prefix, event,value in parser:
 
 	elif(prefix == "item" and event == "end_map"):
 
- 		rand = random.randint(0,9)
-
  		if(newItem['partition'] == 'train'):
- 			json.dump(newItem, train_files[rand])
+
+ 			currentTrainFile.append(newItem)
+
+ 			if(len(currentTrainFile) == 70000):
+ 				print("Train: " + str(trainCounter))
+ 				trainf = open('../data/train' + str(trainCounter) + '.json', 'w+')
+ 				trainCounter += 1
+ 				json.dump(currentTrainFile, trainf)
+
+ 				trainf.close()
+
+ 				currentTrainFile = []
+
  		elif(newItem['partition'] == 'test'):
- 			json.dump(newItem, test_files[rand])
 
- 		i += 1
- 		if(i % 1000 == 0):
- 			print(i)
+ 			currentTestFile.append(newItem)
 
+ 			if(len(currentTestFile) == 30000):
+ 				print("Test: " + str(testCounter))
+ 				testf = open('../data/test' + str(testCounter) + '.json', 'w+')
+ 				testCounter += 1
+ 				json.dump(currentTestFile, testf)
 
-for f in test_files:
-	f.close()
+ 				testf.close()
 
-for f in train_files:
-	f.close()
-
-print("Files Closed.")
-
-
+ 				currentTestFile = []
 
 
