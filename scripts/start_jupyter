@@ -1,0 +1,13 @@
+if [ $# -lt 1 ]; then
+    echo "Invalid Usage. Please provide an access token"
+    echo -e "\tstart_jupyter <token>"
+    exit 1
+fi
+
+echo ""
+echo "URL: http://172.20.7.13:$JUPPORT/tree/?token=$1"
+echo ""
+
+jupyter notebook --ip 0.0.0.0 --no-browser --allow-root --NotebookApp.token=$1
+
+

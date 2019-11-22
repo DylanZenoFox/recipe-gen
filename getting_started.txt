@@ -1,0 +1,15 @@
+Option 1: Docker
+- install docker (link instructions)
+- build image (maybe write script)
+    - from cuda ubtunti
+    - copy requirements.txt
+    - pip install requirements.txt
+- run start_docker (write script)
+   - option for nvidia docker versus docker
+   - start_jupyter script inside
+
+Option 2: Not Docker
+- based on ubtuntu system with gpu stuff
+- download cuda stuff
+- check version of python=3.7
+- python3 -m pip install -r requirements.txt

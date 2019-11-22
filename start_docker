@@ -1,0 +1,6 @@
+if [ $# -lt 3 ]; then
+    echo "Invalid Usage. Please provide a nvidia-docker or docker, container name, port"
+    echo -e "\recipe_gen_image <docker> <container name> <jupyter port>"
+    exit 1
+fi
+$1 run --rm -p $3:8888 -it --name $2 -v "$(pwd):/code" test
