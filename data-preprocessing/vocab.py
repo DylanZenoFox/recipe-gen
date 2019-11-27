@@ -1,7 +1,5 @@
 import spacy
 import json
-import pandas as pd 
-
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -13,9 +11,11 @@ class Vocab:
         self.n_words = 5  # Count SOS and EOS
     
     def add_instruction(self, instruction):
+        """Takes a single instruction and adds it to the vocab"""
         self.tokenize(instruction)
             
     def add_ingredient(self, ingredient):
+        """Takes a single ingredient and adds it to the vocab"""
         self.tokenize(ingredient)
         
     def add_title(self, title):
@@ -45,19 +45,23 @@ class Vocab:
             
         with open('word2count.json', 'w') as f:
             json.dump(self.word2count, f)
+
         print('DONE')
 
 def create_vocab():
     vocab = Vocab()
     for j in range(10):
         file = f'../data/train{j}.json'
+        
         with open(file, 'r') as f:
-            df = pd.read_json(f)
-
-        for i, row in df.iterrows():
-            for ingredient in row['ingredients']:
+            file = json.load(f)
+            print('Loaded File: ', file)
+        
+        for recipe in file:
+            vocab.add_title(recipe["title"])
+            for ingredient in recipe["ingredients"]:
                 vocab.add_ingredient(ingredient)
-            for instruction in row['instructions']:
+            for instruction in recipe["instructions"]:
                 vocab.add_instruction(instruction)
-            vocab.add_title(row['title'])
-    vocab.save_dictionaries
+            
+        vocab.save_dictionaries()
