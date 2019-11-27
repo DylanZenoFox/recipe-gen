@@ -51,13 +51,13 @@ class Vocab:
 def create_vocab():
     vocab = Vocab()
     for j in range(10):
-        file = f'../data/train{j}.json'
+        file_path = f'../data/train{j}.json'
         
         with open(file, 'r') as f:
-            file = json.load(f)
-            print('Loaded File: ', file)
+            data = json.load(f)
+            print('Loaded File: ', file_path)
         
-        for recipe in file:
+        for recipe in data:
             vocab.add_title(recipe["title"])
             for ingredient in recipe["ingredients"]:
                 vocab.add_ingredient(ingredient)
