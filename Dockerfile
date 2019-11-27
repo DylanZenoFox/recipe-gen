@@ -36,6 +36,7 @@ RUN conda install -y -c pytorch \
 
 RUN python3.7 -m pip install -r /tmp/requirements.txt
 RUN python3.7 -m ipykernel install
+RUN python3.7 -m spacy download en_core_web_sm
 RUN jupyter contrib nbextension install --system
 RUN jupyter nbextension enable --system codefolding/main
 RUN jupyter nbextension enable --system scroll_down/main
