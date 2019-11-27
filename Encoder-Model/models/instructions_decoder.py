@@ -43,10 +43,7 @@ class SingleInstructionDecoder(torch.nn.Module):
 		self.embedding = nn.Embedding(vocab_size,embedding_dim)
 		self.gru = nn.GRU(embedding_dim,hidden_dim)
 		self.out = nn.Linear(hidden_dim,vocab_size)
-		self.softmax = nn.LogSoftmax(dim=1)
-
-
-
+		self.softmax = nn.Softmax(dim=1)
 
 
 	# Forward pass of the Single Instruction Decoder
@@ -54,20 +51,27 @@ class SingleInstructionDecoder(torch.nn.Module):
 	# Parameters:
 	#	
 	# Input: 
-	#		input: tensor of shape (1, batch_size) representing vocab indices to extract for embedding 
-	#		hidden: tensor of shape (batch_size, hidden_dim) representing the hidden state for the previous timestep
+	#		input: tensor of shape (batch_size, 1) representing vocab indices to extract for embedding 
+	#		hidden: tensor of shape (1, batch_size, hidden_dim) representing the hidden state for the previous timestep
+	#
+	# Output:
+	#		output: tensor of shape (batch_size, vocab_size) representing softmax distribution over words in vocabulary
+	#		hidden: tensor of shape (1, batch_size, hidden_dim) representing the hidden state of the current timestep
 
 	def forward(self,input,hidden):
 
-		#NEEDS TESTING
+		batch_size = hidden.size(1)
+
 		output = self.embedding(input)
+		output = torch.transpose(output,0,1)
+
 		output = F.relu(output)
-		output,hidden =  self.gru(output,hidden)
+		output, hidden =  self.gru(output,hidden)
 		output = self.softmax(self.out(output[0]))
 		return output, hidden
 
-	def initHidden(self):
-		return torch.zeros(1,1, self.hidden_dim)
+	def initHidden(self,batch_size):
+		return torch.zeros(1,batch_size, self.hidden_dim)
 
 
 
@@ -121,18 +125,23 @@ class EndInstructionsClassifier(torch.nn.Module):
 
 #TESTING
 
-test = torch.tensor([
+test = torch.tensor([[
 						[1.0,2.0,3.0,4.0,5.0,6.0],
 						[6.0,5.0,4.0,3.0,2.0,1.0],
 						[6.0,5.0,4.0,3.0,2.0,1.0]
+					]])
 
-					])
+#print(test.shape)
 
-print(test.shape)
+innerGRU = SingleInstructionDecoder(embedding_dim = 5, hidden_dim = 6, vocab_size = 30)
 
-endinstr = EndInstructionsClassifier(6,3)
 
-out = endinstr(test)
+out, hidden = innerGRU(torch.tensor([[9],[3],[4]]),test)
+out, hidden = innerGRU(torch.tensor([[5],[6],[2]]),hidden)
 
-print(out)
 print(out.shape)
+print(out)
+print(hidden.shape)
+print(hidden)
+
+
