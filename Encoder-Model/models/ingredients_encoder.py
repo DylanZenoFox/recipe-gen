@@ -50,7 +50,7 @@ class IngredientsEncoder(torch.nn.Module):
 	# 		ingredients: Tensor of shape (batch_size, num_ingredients, seq_len) representing a batch of ingredient sets
 	#
 	# Output: 
-	#		output:  Tensor of shape (num_ingredients, batch_size, hidden_size) representing output for each timestep for each batch
+	#		output:  Tensor of shape (num_ingredients, batch_size, hidden_size * num_directions) representing output for each timestep for each batch
 	#		hidden:  Tensor of shape (num_layers * num_directions, batch_size, hidden_size) representing the last output of the hidden state for the outer GRU
 
 	def forward(self, ingredients):
@@ -181,5 +181,5 @@ ingr_encoder = IngredientsEncoder(10,5,20,10, outer_bidirectional = True, inner_
 
 outputs, hidden = ingr_encoder(test) 
 
-print(hidden)
-print(hidden.shape)
+print(outputs)
+print(outputs.shape)

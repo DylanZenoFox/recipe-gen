@@ -24,22 +24,43 @@ class InstructionsDecoder(torch.nn.Module):
 
 class SingleInstructionDecoder(torch.nn.Module):
 
+	# Initialize Single Instruction Decoder
+	#
+	# Parameters:
+	#	
+	# Input: 
+	# 		vocab_size: size of the vocabulary
+	#		embedding_dim: dimension of the word embedding
+	#		hidden_dim: dimension of the hidden state 
 
-	def __init__(self, hidden_dim, vocab_size):
+	def __init__(self, embedding_dim, hidden_dim, vocab_size):
 		super(SingleInstructionDecoder,self).__init__()
 
 		self.hidden_dim = hidden_dim
 		self.vocab_size = vocab_size
+		self.embedding_dim = embedding_dim
 
-		self.embedding = nn.Embedding(vocab_size,hidden_dim)
-		self.gru = nn.GRU(hidden_dim,hidden_dim)
+		self.embedding = nn.Embedding(vocab_size,embedding_dim)
+		self.gru = nn.GRU(embedding_dim,hidden_dim)
 		self.out = nn.Linear(hidden_dim,vocab_size)
 		self.softmax = nn.LogSoftmax(dim=1)
 
 
+
+
+
+	# Forward pass of the Single Instruction Decoder
+	#
+	# Parameters:
+	#	
+	# Input: 
+	#		input: tensor of shape (1, batch_size) representing vocab indices to extract for embedding 
+	#		hidden: tensor of shape (batch_size, hidden_dim) representing the hidden state for the previous timestep
+
 	def forward(self,input,hidden):
 
-		output = self.embedding(input).view(1,1,-1)
+		#NEEDS TESTING
+		output = self.embedding(input)
 		output = F.relu(output)
 		output,hidden =  self.gru(output,hidden)
 		output = self.softmax(self.out(output[0]))
@@ -87,6 +108,9 @@ class EndInstructionsClassifier(torch.nn.Module):
 	#	
 	# Input: 
 	# 		hidden_state: Tensor of shape (batch size, hidden_dim) representing the hidden state of the outer GRU 
+	#
+	# Output: 
+	#		LogSoftmax: Tensor of shape (batch_size, 2) representing log softmax values for the binary classifier
 
 	def forward(self, hidden_state):
 
@@ -99,7 +123,9 @@ class EndInstructionsClassifier(torch.nn.Module):
 
 test = torch.tensor([
 						[1.0,2.0,3.0,4.0,5.0,6.0],
+						[6.0,5.0,4.0,3.0,2.0,1.0],
 						[6.0,5.0,4.0,3.0,2.0,1.0]
+
 					])
 
 print(test.shape)
