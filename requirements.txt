@@ -11,4 +11,4 @@ torchvision==0.2.1
 jupyterlab
 jupyter_contrib_nbextensions
 ijson
-
+spacy
