@@ -15,7 +15,7 @@ class TitleEncoder(torch.nn.Module):
 	#		vocab_size: size of the vocabulary
 	#		bidirectional: Run as bidirectional RNN, Default = False
 
-	def __init__(self, embedding_dim, hidden_dim, vocab_size, bidirectional = False):
+	def __init__(self, embedding_dim, hidden_dim, vocab_size):
 
 		super(TitleEncoder,self).__init__()
 
@@ -23,10 +23,8 @@ class TitleEncoder(torch.nn.Module):
 		self.embedding_dim = embedding_dim
 		self.vocab_size = vocab_size
 
-		self.bidirectional = bidirectional
-
 		self.embedding = nn.Embedding(vocab_size,embedding_dim)
-		self.gru = nn.GRU(embedding_dim, hidden_dim, bidirectional = self.bidirectional)
+		self.gru = nn.GRU(embedding_dim, hidden_dim)
 
 
 
@@ -72,7 +70,6 @@ class TitleEncoder(torch.nn.Module):
 	#		Tensor of shape (num_layers = 1, batch_size, hidden_dim) representing initial hidden state
 
 	def initHidden(self,batch_size):
-
 		return torch.zeros(1, batch_size ,self.hidden_dim)
 
 
@@ -80,22 +77,24 @@ class TitleEncoder(torch.nn.Module):
 
 # TESTING CODE
 
-test = torch.tensor([
+if(__name__ == '__main__'):
 
-					[
-						5,8,6,7,6
-					],
 
-					[
-						4,8,6,3,6
-					]
-					])
+	test = torch.tensor([
 
-title_encoder = TitleEncoder(5,10,10)
-torch.manual_seed(0)
+						[
+							5,8,6,7,6
+						],
 
-out, hidden = title_encoder(test)
-print(out)
-print(out.shape)
-print(hidden)
-print(hidden.shape)
+						[
+							4,8,6,3,6
+						]
+						])
+
+	title_encoder = TitleEncoder(5,10,10)
+
+	out, hidden = title_encoder(test)
+	print(out)
+	print(out.shape)
+	print(hidden)
+	print(hidden.shape)

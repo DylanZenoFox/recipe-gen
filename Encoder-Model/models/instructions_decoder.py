@@ -269,19 +269,21 @@ class EndInstructionsClassifier(torch.nn.Module):
 
 #TESTING
 
-decoder = InstructionsDecoder(instr_hidden_dim = 5, word_embedding_dim = 3, rec_hidden_dim  = 10, vocab_size = 10)
-crit = nn.NLLLoss()
+if(__name__ == '__main__'):
 
-test = torch.tensor([
-						[[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,0.0]]
-					])
+	decoder = InstructionsDecoder(instr_hidden_dim = 5, word_embedding_dim = 3, rec_hidden_dim  = 10, vocab_size = 10)
+	crit = nn.NLLLoss()
 
-output, hidden, instructions, loss = decoder( input= torch.tensor([[[3.0,4.0,5.0,6.0,7.0]]]),  hidden = test, inner_loss = crit, targets = torch.tensor([0,3,5,5,3,9,1]))
+	test = torch.tensor([
+							[[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,0.0]]
+						])
 
-print(output)
-print(hidden)
-print(loss)
-print(instructions)
+	output, hidden, instructions, loss = decoder( input= torch.tensor([[[3.0,4.0,5.0,6.0,7.0]]]),  hidden = test, inner_loss = crit, targets = torch.tensor([0,3,5,5,3,9,1]))
+
+	print(output)
+	print(hidden)
+	print(loss)
+	print(instructions)
 
 
 
