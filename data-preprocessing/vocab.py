@@ -98,7 +98,8 @@ def load_vocab():
 
     with open('word2count.json', 'r') as f:
         vocab.word2count = json.load(f)
-        
+    
+    return vocab
     
 
 
