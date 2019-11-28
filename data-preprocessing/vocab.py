@@ -60,12 +60,12 @@ class Vocab:
             
         with open('word2count.json', 'w') as f:
             json.dump(self.word2count, f)
-            
+        
 
 def create_vocab():
     """Creates a vocab based on the recipe train data"""
     vocab = Vocab()
-    for j in range(10):
+    for j in range(9):
         file_path = f'../data/train{j}.json'
         
         with open(file_path, 'r') as f:
@@ -87,16 +87,19 @@ def create_vocab():
 
 def load_vocab():
     """Loads vocab from dump data"""
+    vocab = Vocab()
+    self.n_words = len(word2index)
+    
     with open('word2index.json', 'r') as f:
-        word2index = json.load(f)
+        vocab.word2index = json.load(f)
 
     with open('index2word.json', 'r') as f:
-        index2word = json.load(f)
+        vocab.index2word = json.load(f)
 
     with open('word2count.json', 'r') as f:
-        word2count = json.load(f)
+        vocab.word2count = json.load(f)
+        
     
-    return word2index, index2word, word2count
 
 
 if __name__ == "__main__":
