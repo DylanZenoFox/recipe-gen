@@ -107,7 +107,7 @@ class InstructionsDecoder(torch.nn.Module):
 			# If using teacher forcing
 			if(use_teacher_forcing):
 
-				print("Using teacher forcing")
+				#print("Using teacher forcing")
 
 				# Iterate until the end of the target 
 				for i in range(1, targets.size(0)):
@@ -128,7 +128,7 @@ class InstructionsDecoder(torch.nn.Module):
 
 
 			else:
-				print("Not using teacher forcing")
+				#print("Not using teacher forcing")
 
 				# Iterate until end of target instruction
 				for i in range(1, targets.size(0)):
