@@ -115,7 +115,11 @@ class InstructionsDecoder(torch.nn.Module):
 					instr_output, instr_hidden = self.innerGRU(instr_input, single_instr)
 
 					# Calculate loss on this word
-					loss += inner_loss(instr_output, targets[i])
+					in_loss = inner_loss(instr_output, targets[i])
+
+					loss += in_loss
+
+					print("inner loss for word " + str(targets[i].item()) + ": " + str(in_loss.item()))
 
 					# Get the top value and index of this output
 					topv, topi = instr_output.topk(1)
@@ -140,8 +144,12 @@ class InstructionsDecoder(torch.nn.Module):
 					decoded_instruction.append(topi.item())
 
 					# Calculate loss for this word
-					loss += inner_loss(instr_output, targets[i])
+					in_loss = inner_loss(instr_output, targets[i])
 
+					loss += in_loss
+					
+					print("inner loss for word " + str(targets[i].item()) + ": " + str(in_loss.item()))
+					
 					# Set the next input to be predicted word
 					instr_input = topi.detach()
 
@@ -153,6 +161,8 @@ class InstructionsDecoder(torch.nn.Module):
 		output = instr_hidden
 
 		instruction = decoded_instruction
+
+		print(loss)
 
 		return output, hidden, instruction, loss
 

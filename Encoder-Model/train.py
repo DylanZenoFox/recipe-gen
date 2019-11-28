@@ -76,11 +76,12 @@ class Solver():
 
 		# OPTIMIZERS
 
-		self.title_encoder_optimizer = optim.SGD(self.title_encoder.parameters(), lr=self.learning_rate)
-		self.ingredients_encoder_optimizer = optim.SGD(self.ingredients_encoder.parameters(), lr=self.learning_rate)
+		self.title_encoder_optimizer = optim.Adam(self.title_encoder.parameters())
+		self.ingredients_encoder_optimizer = optim.Adam(self.ingredients_encoder.parameters())
 
-		self.instructions_decoder_optimizer = optim.SGD(self.instructions_decoder.parameters(), lr=self.learning_rate)
-		self.end_instructions_classifier_optimizer = optim.SGD(self.end_instructions_classifier.parameters(), lr=self.learning_rate)
+		self.instructions_decoder_optimizer = optim.Adam(self.instructions_decoder.parameters())
+		self.end_instructions_classifier_optimizer = optim.Adam(self.end_instructions_classifier.parameters())
+		self.instr_hidden2input_optimizer = optim.Adam(self.instr_hidden2input.parameters())
 
 		# LOSS FUNCTIONS
 
@@ -104,6 +105,7 @@ class Solver():
 		self.ingredients_encoder_optimizer.zero_grad()
 		self.instructions_decoder_optimizer.zero_grad()
 		self.end_instructions_classifier_optimizer.zero_grad()
+		self.instr_hidden2input_optimizer.zero_grad()
 
 		# Encode title and ingredients
 		title_outputs, encoded_title = self.title_encoder(title)
@@ -113,45 +115,62 @@ class Solver():
 		# Concatenate to get first hidden layer of decoder
 		decoder_hidden = torch.cat([encoded_title,encoded_ingr], dim = 2)
 
-		decoder_input = self.instr_hidden2input(decoder_hidden).detach()
+		decoder_input = self.instr_hidden2input(decoder_hidden)
 
-		total_loss = 0
+		rnn_loss = 0
+		classifier_loss = 0
+
+		instructions = []
+
 
 		for i in range(len(target_instructions)):
 
 			decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
 				self.decoder_criterion, targets = target_instructions[i])
 
-			#print(loss)
-			total_loss += loss
+			instructions.append(decoded_instruction)
+
+			rnn_loss += loss
 
 			end_instructions = self.end_instructions_classifier(decoder_hidden[0])
 
+			# Print the decoded instruction next to the actual instruction
+			print(str(i) + " Decoded: " + self.indices2string(decoded_instruction))
+			print(str(i) + " Actual: " + self.indices2string(target_instructions[i].tolist()))
+
 			# 1 means that instructions should end, 0 means that instructions should continue
+
+			print("End Instr? " + str(end_instructions.topk(1)[1]))
+
 			if(i == len(target_instructions)-1):
-				total_loss += self.end_instr_criterion(end_instructions, torch.tensor([1]))
+				classifier_loss += self.end_instr_criterion(end_instructions, torch.tensor([1]))
 			else:
-				total_loss += self.end_instr_criterion(end_instructions, torch.tensor([0]))
+				classifier_loss += self.end_instr_criterion(end_instructions, torch.tensor([0]))
 
 			decoder_input = decoder_output.detach()
+
+		total_loss = rnn_loss + classifier_loss
 
 		print("Forward Pass Complete")
 
 		total_loss.backward()
 
+		print("Computed Gradients")
+
+		self.end_instructions_classifier_optimizer.step()
+		self.instructions_decoder_optimizer.step()
+		self.instr_hidden2input_optimizer.step()
 		self.title_encoder_optimizer.step()
 		self.ingredients_encoder_optimizer.step()
-		self.instructions_decoder_optimizer.step()
-		self.end_instructions_classifier_optimizer.step()
 
-		print("Backwards pass complete")
+		print("Updated Gradients")
 
 		return total_loss.item() / len(target_instructions)
 
 
 
 
-	def trainIters(self, print_every = 1000):
+	def trainIters(self, print_every = 10):
 
 		iters = 0
 		total_loss = 0
@@ -226,15 +245,20 @@ class Solver():
 
 		return ingr
 
-	def get_instruction_indices(self, instructtion_list):
+	def get_instruction_indices(self, instruction_list):
 
 		instr = []
 
-		for i in instructtion_list:
+		for i in instruction_list:
 
 			instr.append(torch.tensor([0] + self.tokenlist2indexlist(self.process_string(i)) + [1]))
 
 		return instr
+
+
+	def indices2string(self, index_list):
+
+		return " ".join([self.index2word[str(index)] for index in index_list])
 
 
 
