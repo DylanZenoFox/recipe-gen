@@ -6,6 +6,8 @@ import torch.optim as optim
 SOS_Token = 0
 EOS_Token = 1
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 ################################################
 #
 # 			INGREDIENT LIST ENCODER
@@ -92,9 +94,9 @@ class IngredientsEncoder(torch.nn.Module):
 	def initHidden(self,batch_size, bidirectional):
 
 		if(bidirectional):
-			return torch.zeros(2,batch_size,self.hidden_dim)
+			return torch.zeros(2,batch_size,self.hidden_dim, device = device)
 		else:	
-			return torch.zeros(1,batch_size,self.hidden_dim)
+			return torch.zeros(1,batch_size,self.hidden_dim, device = device)
 
 
 
@@ -164,9 +166,9 @@ class SingleIngredientEncoder(torch.nn.Module):
 	def initHidden(self,batch_size, bidirectional):
 
 		if(bidirectional):
-			return torch.zeros(2, batch_size ,self.hidden_dim)
+			return torch.zeros(2, batch_size ,self.hidden_dim, device = device)
 		else: 
-			return torch.zeros(1, batch_size ,self.hidden_dim)
+			return torch.zeros(1, batch_size ,self.hidden_dim, device = device)
 
 
 

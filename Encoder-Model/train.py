@@ -12,9 +12,12 @@ import json
 import spacy
 from spacy.lang.en import English
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class Solver():
 
 	def __init__(self):
+
 
 		# TOKENIZER 
 
@@ -53,7 +56,7 @@ class Solver():
 
 		self.max_num_instructions = 10
 
-		self.teacher_forcing_ratio = 0.5
+		self.teacher_forcing_ratio = 1.0
 
 		self.binary_MLP_hidden_dim = 50
 
@@ -61,18 +64,18 @@ class Solver():
 
 		# MODELS
 
-		self.instr_hidden2input = nn.Linear(self.instructions_hidden_dim, self.single_instruction_dim)
+		self.instr_hidden2input = nn.Linear(self.instructions_hidden_dim, self.single_instruction_dim).to(device)
 
-		self.title_encoder = TitleEncoder(embedding_dim= self.word_embedding_dim, hidden_dim = self.title_hidden_dim, vocab_size = self.vocab_size)
+		self.title_encoder = TitleEncoder(embedding_dim= self.word_embedding_dim, hidden_dim = self.title_hidden_dim, vocab_size = self.vocab_size).to(device)
 
 		self.ingredients_encoder = IngredientsEncoder(ingr_embed_dim = self.single_ingr_dim, word_embed_dim = self.word_embedding_dim, 
-			hidden_dim = self.ingredients_hidden_dim, vocab_size = self.vocab_size, outer_bidirectional = self.ingredients_bidirectional)
+			hidden_dim = self.ingredients_hidden_dim, vocab_size = self.vocab_size, outer_bidirectional = self.ingredients_bidirectional).to(device)
 
 		self.instructions_decoder = InstructionsDecoder(instr_hidden_dim = self.single_instruction_dim, word_embedding_dim = self.word_embedding_dim,
 			rec_hidden_dim = self.instructions_hidden_dim, vocab_size = self.vocab_size, max_instr_length = self.max_instr_length, 
-			teacher_forcing_ratio = self.teacher_forcing_ratio)
+			teacher_forcing_ratio = self.teacher_forcing_ratio).to(device)
 
-		self.end_instructions_classifier = EndInstructionsClassifier(instr_embed_dim = self.instructions_hidden_dim, hidden_dim = self.binary_MLP_hidden_dim)
+		self.end_instructions_classifier = EndInstructionsClassifier(instr_embed_dim = self.instructions_hidden_dim, hidden_dim = self.binary_MLP_hidden_dim).to(device)
 
 		# OPTIMIZERS
 
@@ -233,7 +236,7 @@ class Solver():
 	def get_title_indices(self,title):
 
 		title = [0] + self.tokenlist2indexlist(self.process_string(title)) + [1]
-		return torch.unsqueeze(torch.tensor(title),0)
+		return torch.unsqueeze(torch.tensor(title, device = device),0)
 
 	def get_ingredient_indices(self,ingredient_list):
 
@@ -241,7 +244,7 @@ class Solver():
 
 		for i in ingredient_list:
 
-			ingr.append(torch.tensor([0] + self.tokenlist2indexlist(self.process_string(i)) + [1]))
+			ingr.append(torch.tensor([0] + self.tokenlist2indexlist(self.process_string(i)) + [1], device = device))
 
 		return ingr
 
@@ -251,7 +254,7 @@ class Solver():
 
 		for i in instruction_list:
 
-			instr.append(torch.tensor([0] + self.tokenlist2indexlist(self.process_string(i)) + [1]))
+			instr.append(torch.tensor([0] + self.tokenlist2indexlist(self.process_string(i)) + [1], device = device))
 
 		return instr
 
@@ -259,11 +262,6 @@ class Solver():
 	def indices2string(self, index_list):
 
 		return " ".join([self.index2word[str(index)] for index in index_list])
-
-
-
-
-
 
 
 

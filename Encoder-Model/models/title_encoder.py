@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class TitleEncoder(torch.nn.Module):
 
 	# Initialize Model
@@ -70,7 +72,7 @@ class TitleEncoder(torch.nn.Module):
 	#		Tensor of shape (num_layers = 1, batch_size, hidden_dim) representing initial hidden state
 
 	def initHidden(self,batch_size):
-		return torch.zeros(1, batch_size ,self.hidden_dim)
+		return torch.zeros(1, batch_size ,self.hidden_dim, device = device)
 
 
 

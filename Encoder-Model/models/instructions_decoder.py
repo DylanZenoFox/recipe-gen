@@ -7,6 +7,8 @@ import random
 SOS_Token = 0
 EOS_Token = 1
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 class InstructionsDecoder(torch.nn.Module):
 
 	# Initialize Total Instructions Decoder
@@ -65,7 +67,7 @@ class InstructionsDecoder(torch.nn.Module):
 		single_instr = F.relu(single_instr)
 
 		#Always create first input as SOS token
-		instr_input = torch.tensor([[SOS_Token]])
+		instr_input = torch.tensor([[SOS_Token]],device = device)
 
 		# Values to return
 		decoded_instruction = [SOS_Token]
@@ -149,7 +151,7 @@ class InstructionsDecoder(torch.nn.Module):
 					loss += in_loss
 					
 					print("inner loss for word " + str(targets[i].item()) + ": " + str(in_loss.item()))
-					
+
 					# Set the next input to be predicted word
 					instr_input = topi.detach()
 
@@ -225,7 +227,7 @@ class SingleInstructionDecoder(torch.nn.Module):
 		return output, hidden
 
 	def initHidden(self,batch_size):
-		return torch.zeros(1,batch_size, self.hidden_dim)
+		return torch.zeros(1,batch_size, self.hidden_dim, device = device)
 
 
 
