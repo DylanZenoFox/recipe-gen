@@ -146,9 +146,9 @@ class Solver():
 			print("End Instr? " + str(end_instructions.topk(1)[1]))
 
 			if(i == len(target_instructions)-1):
-				classifier_loss += self.end_instr_criterion(end_instructions, torch.tensor([1]))
+				classifier_loss += self.end_instr_criterion(end_instructions, torch.tensor([1], device = device))
 			else:
-				classifier_loss += self.end_instr_criterion(end_instructions, torch.tensor([0]))
+				classifier_loss += self.end_instr_criterion(end_instructions, torch.tensor([0], device = device))
 
 			decoder_input = decoder_output.detach()
 
