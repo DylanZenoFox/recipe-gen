@@ -16,8 +16,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Solver():
 
-	def __init__(self):
+	def __init__(self, load_from_path = None, save_to_path = None, save_frequency = 100):
 
+
+		self.load_from_path = load_from_path
+		self.save_to_path = save_to_path
+		self.save_frequency = save_frequency
 
 		# TOKENIZER 
 
@@ -64,7 +68,7 @@ class Solver():
 
 		# MODELS
 
-		self.instr_hidden2input = nn.Linear(self.instructions_hidden_dim, self.single_instruction_dim).to(device)
+		#self.instr_hidden2input = nn.Linear(self.instructions_hidden_dim, self.single_instruction_dim).to(device)
 
 		self.title_encoder = TitleEncoder(embedding_dim= self.word_embedding_dim, hidden_dim = self.title_hidden_dim, vocab_size = self.vocab_size).to(device)
 
@@ -77,6 +81,7 @@ class Solver():
 
 		self.end_instructions_classifier = EndInstructionsClassifier(instr_embed_dim = self.instructions_hidden_dim, hidden_dim = self.binary_MLP_hidden_dim).to(device)
 
+
 		# OPTIMIZERS
 
 		self.title_encoder_optimizer = optim.Adam(self.title_encoder.parameters())
@@ -84,12 +89,22 @@ class Solver():
 
 		self.instructions_decoder_optimizer = optim.Adam(self.instructions_decoder.parameters())
 		self.end_instructions_classifier_optimizer = optim.Adam(self.end_instructions_classifier.parameters())
-		self.instr_hidden2input_optimizer = optim.Adam(self.instr_hidden2input.parameters())
+		#self.instr_hidden2input_optimizer = optim.Adam(self.instr_hidden2input.parameters())
 
 		# LOSS FUNCTIONS
 
 		self.decoder_criterion = nn.NLLLoss()
 		self.end_instr_criterion = nn.NLLLoss()
+
+		# LOAD PARAMETERS IF POSSIBLE
+
+		if(self.load_from_path is not None):
+
+			self.load_model(self.load_from_path)
+
+
+
+
 
 
 	#  
@@ -108,7 +123,7 @@ class Solver():
 		self.ingredients_encoder_optimizer.zero_grad()
 		self.instructions_decoder_optimizer.zero_grad()
 		self.end_instructions_classifier_optimizer.zero_grad()
-		self.instr_hidden2input_optimizer.zero_grad()
+		#self.instr_hidden2input_optimizer.zero_grad()
 
 		# Encode title and ingredients
 		title_outputs, encoded_title = self.title_encoder(title)
@@ -118,7 +133,12 @@ class Solver():
 		# Concatenate to get first hidden layer of decoder
 		decoder_hidden = torch.cat([encoded_title,encoded_ingr], dim = 2)
 
-		decoder_input = self.instr_hidden2input(decoder_hidden)
+		#decoder_input = self.instr_hidden2input(decoder_hidden)
+		decoder_input = torch.zeros(self.single_instruction_dim, device = device)
+		decoder_input = torch.unsqueeze(decoder_input,0)
+		decoder_input = torch.unsqueeze(decoder_input,0)
+
+
 
 		rnn_loss = 0
 		classifier_loss = 0
@@ -146,9 +166,18 @@ class Solver():
 			print("End Instr? " + str(end_instructions.topk(1)[1]))
 
 			if(i == len(target_instructions)-1):
-				classifier_loss += self.end_instr_criterion(end_instructions, torch.tensor([1], device = device))
+				single_instr_cl_loss = self.end_instr_criterion(end_instructions, torch.tensor([1], device = device))
+
+				print("Should End [1]. Values: " + str(end_instructions) + " Loss:" + str(single_instr_cl_loss.item()))
+
+				classifier_loss += single_instr_cl_loss
 			else:
-				classifier_loss += self.end_instr_criterion(end_instructions, torch.tensor([0], device = device))
+				single_instr_cl_loss = self.end_instr_criterion(end_instructions, torch.tensor([0], device = device))
+
+				print("Should not end [0]. Values: " + str(end_instructions) + " Loss:" + str(single_instr_cl_loss.item()))
+
+				classifier_loss += single_instr_cl_loss
+
 
 			decoder_input = decoder_output.detach()
 
@@ -162,7 +191,7 @@ class Solver():
 
 		self.end_instructions_classifier_optimizer.step()
 		self.instructions_decoder_optimizer.step()
-		self.instr_hidden2input_optimizer.step()
+		#self.instr_hidden2input_optimizer.step()
 		self.title_encoder_optimizer.step()
 		self.ingredients_encoder_optimizer.step()
 
@@ -207,6 +236,11 @@ class Solver():
 
 						print("Total Loss: " + str(total_loss/print_every))
 						total_loss = 0 
+
+
+					if((self.save_to_path is not None) and (iters % self.save_frequency == 0)):
+
+						self.save_model(self.save_to_path)
 
 
 
@@ -266,11 +300,40 @@ class Solver():
 
 
 
+	def save_model(self, model_params_path):
+
+		torch.save({
+
+					'title_encoder_state_dict':
+					self.title_encoder.state_dict(),
+
+					'ingredients_encoder_state_dict':
+					self.ingredients_encoder.state_dict(),
+
+					'instructions_decoder_state_dict':
+					self.instructions_decoder.state_dict(),
+
+					'end_instructions_classifier_state_dict':
+					self.end_instructions_classifier.state_dict()
+			}, model_params_path)
+
+
+
+
+	def load_model(self,model_params_path):
+
+		checkpoint = torch.load(model_params_path)
+
+		self.title_encoder.load_state_dict(checkpoint['title_encoder_state_dict'])
+		self.ingredients_encoder.load_state_dict(checkpoint['ingredients_encoder_state_dict'])
+		self.instructions_decoder.load_state_dict(checkpoint['instructions_decoder_state_dict'])
+		self.end_instructions_classifier.load_state_dict(checkpoint['end_instructions_classifier_state_dict'])
+
 
 
 if(__name__ == '__main__'):
 
-	test = Solver()
+	test = Solver(load_from_path = './model_params/train_checkpoint1', save_to_path = './model_params/train_checkpoint2', save_frequency = 10)
 
 	test_title = torch.tensor([[0,3,4,6,7,5,1]])
 
