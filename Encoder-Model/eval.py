@@ -101,7 +101,7 @@ class Solver():
 			self.load_model(self.load_from_path)
 
 
-	def evaluate_example(self,title, ingredients, target_instructions, length):
+	def evaluate_example(self,title, ingredients, target_instructions, length = 10):
 
 		# Encode title and ingredients
 		title_outputs, encoded_title = self.title_encoder(title)
