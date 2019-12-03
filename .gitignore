@@ -1,2 +1,3 @@
 data/layer1.json
 Encoder-Model/model_params/*
+**/__pycache__/*

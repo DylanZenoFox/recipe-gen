@@ -25,10 +25,8 @@ class TitleEncoder(torch.nn.Module):
 		self.embedding_dim = embedding_dim
 		self.vocab_size = vocab_size
 
-		self.embedding = nn.Embedding(vocab_size,embedding_dim)
-		self.gru = nn.GRU(embedding_dim, hidden_dim)
-
-
+		self.embedding = nn.Embedding(vocab_size, embedding_dim)
+		self.gru = nn.GRU(embedding_dim, hidden_dim, bidirectional=True)
 
 
 	# Forward Pass
@@ -55,8 +53,10 @@ class TitleEncoder(torch.nn.Module):
 		embedded = torch.transpose(embedded,0,1)
 
 		#Get outputs for each state and hidden state at the end
-		output, hidden = self.gru(embedded,hidden)
-
+		output, hidden = self.gru(embedded, hidden)
+		hidden_forward = hidden[:, 1] 
+		hidden_backward = hidden[1, :] 
+		hidden = (hidden_forward * hidden_backward).view(1, batch_size, -1) #may want to change: num_layers hard coded
 		return output, hidden
 
 
@@ -71,10 +71,8 @@ class TitleEncoder(torch.nn.Module):
 	# Output: 
 	#		Tensor of shape (num_layers = 1, batch_size, hidden_dim) representing initial hidden state
 
-	def initHidden(self,batch_size):
-		return torch.zeros(1, batch_size ,self.hidden_dim, device = device)
-
-
+	def initHidden(self, batch_size):
+		 return (torch.zeros(2, batch_size ,self.hidden_dim, device = device))
 
 
 # TESTING CODE
@@ -96,7 +94,7 @@ if(__name__ == '__main__'):
 	title_encoder = TitleEncoder(5,10,10)
 
 	out, hidden = title_encoder(test)
-	print(out)
-	print(out.shape)
-	print(hidden)
-	print(hidden.shape)
+	print('Out: ', out)
+	print('Out.shape: ',out.shape)
+	print('hidden: ', hidden)
+	print('hidden.shape: ', hidden.shape)
