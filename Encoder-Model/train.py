@@ -88,6 +88,9 @@ class Solver():
 
 		instructions, word_loss, end_instr_loss = self.encoder_decoder(title, ingredients, self.word_criterion, self.end_instr_criterion, target_instructions)
 
+		print("Total Word Loss: " + str(word_loss))
+		print("Total End_Instr Loss: " + str(end_instr_loss))
+
 		total_loss = word_loss + end_instr_loss
 
 		print("Forward Pass Complete")
@@ -125,6 +128,8 @@ class Solver():
 
 					instructions = recipe['instructions']
 
+					print("Recipe : " + str(iters) + " (" + title + ") ")
+
 
 					title_input = self.lang.get_title_indices(title)
 					ingredients_input = self.lang.get_ingredient_indices(ingredients)
@@ -132,7 +137,7 @@ class Solver():
 
 					total_loss += self.train_example(title_input, ingredients_input, instructions_input)
 
-					print(iters)
+					print("==============================================================================")
 
 					iters += 1
 					if(iters % print_every == 0):

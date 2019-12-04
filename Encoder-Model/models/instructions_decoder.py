@@ -127,7 +127,7 @@ class InstructionsDecoder(torch.nn.Module):
 
 					loss += in_loss
 
-					print("inner loss for word " + str(targets[i].item()) + ": " + str(in_loss.item()))
+					#print("inner loss for word " + str(targets[i].item()) + ": " + str(in_loss.item()))
 
 					# Get the top value and index of this output
 					topv, topi = instr_output.topk(1)
@@ -157,7 +157,7 @@ class InstructionsDecoder(torch.nn.Module):
 
 					loss += in_loss
 					
-					print("inner loss for word " + str(targets[i].item()) + ": " + str(in_loss.item()))
+					#print("inner loss for word " + str(targets[i].item()) + ": " + str(in_loss.item()))
 
 					# Set the next input to be predicted word
 					instr_input = topi.detach()
