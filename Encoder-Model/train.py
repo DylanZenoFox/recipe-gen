@@ -172,7 +172,7 @@ class Solver():
 
 if(__name__ == '__main__'):
 
-	test = Solver(load_from_path = None, save_to_path = './model_params/updated_train_checkpoint2', save_frequency = 10)
+	test = Solver(load_from_path = None, save_to_path = './model_params/updated_train_checkpoint2', save_frequency = 1000)
 
 
 	#loss_per_instr = test.train_example(test_title, test_ingredients, test_targets)
