@@ -29,9 +29,8 @@ class IngredientsEncoder(torch.nn.Module):
 	#		hidden_dim: Size of the hidden dimension for the outer RNN 
 	#		vocab_size: size of the vocabulary
 	#		outer_bidirectional: Run outer RNN as bidirectional RNN, Default = True
-	#		inner_bidirectional: Run inner RNN as bidirectional RNN, Default = False
 
-	def __init__(self, ingr_embed_dim, word_embed_dim, hidden_dim, vocab_size, outer_bidirectional=True, inner_bidirectional = False):
+	def __init__(self, shared_embeddings, word_embed_dim, ingr_embed_dim, hidden_dim, vocab_size, outer_bidirectional=True):
 
 		super(IngredientsEncoder, self).__init__()
 
@@ -40,11 +39,11 @@ class IngredientsEncoder(torch.nn.Module):
 		self.hidden_dim = hidden_dim
 		self.vocab_size = vocab_size
 		self.outer_bidirectional = outer_bidirectional
-		self.inner_bidirectional = inner_bidirectional
 
 		self.ingr_list_encoder = nn.GRU(ingr_embed_dim, hidden_dim, bidirectional = self.outer_bidirectional)
 
-		self.single_ingr_encoder = SingleIngredientEncoder(word_embed_dim, ingr_embed_dim, vocab_size, bidirectional = inner_bidirectional)
+		self.single_ingr_encoder = SingleIngredientEncoder(shared_embeddings = shared_embeddings, 
+			embedding_dim = self.word_embed_dim, hidden_dim = self.ingr_embed_dim, vocab_size= self.vocab_size)
 
 
 	# Forward Pass of outer GRU
@@ -117,19 +116,17 @@ class SingleIngredientEncoder(torch.nn.Module):
 	# 		embedding_dim: dimension of the embedding vector
 	#		hidden_dim: dimension of the GRU hidden dimension
 	#		vocab_size: size of the vocabulary
-	#		bidirectional: Run as bidirectional RNN, Default = False
 
-	def __init__(self, embedding_dim, hidden_dim, vocab_size, bidirectional = False):
+	def __init__(self, shared_embeddings, embedding_dim, hidden_dim, vocab_size):
 
 		super(SingleIngredientEncoder,self).__init__()
 
 		self.embedding_dim = embedding_dim
 		self.hidden_dim = hidden_dim
 		self.vocab_size = vocab_size
-		self.bidirectional = bidirectional
 
-		self.embedding = nn.Embedding(vocab_size, embedding_dim)
-		self.gru = nn.GRU(embedding_dim,hidden_dim, bidirectional = self.bidirectional)
+		self.embedding = shared_embeddings
+		self.gru = nn.GRU(embedding_dim,hidden_dim)
 
 
 
@@ -150,7 +147,7 @@ class SingleIngredientEncoder(torch.nn.Module):
 		batch_size = ingr_string.size(0)
 
 		#Initialize hidden state
-		hidden = self.initHidden(batch_size, self.bidirectional)
+		hidden = self.initHidden(batch_size)
 
 		#Get embedding for each word
 		embedded = self.embedding(ingr_string)
@@ -162,12 +159,8 @@ class SingleIngredientEncoder(torch.nn.Module):
 		return output, hidden
 
 
-	#COMMENT HERE
-	def initHidden(self,batch_size, bidirectional):
 
-		if(bidirectional):
-			return torch.zeros(2, batch_size ,self.hidden_dim, device = device)
-		else: 
+	def initHidden(self,batch_size):
 			return torch.zeros(1, batch_size ,self.hidden_dim, device = device)
 
 
@@ -182,7 +175,10 @@ if(__name__ == '__main__'):
 
 			]
 	
-	ingr_encoder = IngredientsEncoder(10,5,20,10, outer_bidirectional = True, inner_bidirectional = False)
+
+	embeddings = nn.Embedding(10,5)
+
+	ingr_encoder = IngredientsEncoder(embeddings, 5,10,20,10, outer_bidirectional = True)
 	
 	outputs, hidden = ingr_encoder(test) 
 

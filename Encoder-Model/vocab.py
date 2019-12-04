@@ -6,11 +6,12 @@ from spacy.lang.en import English
 class Vocab:
     """Assigns a unique id to each word in the corpus of recipes"""
     
-    def __init__(self):
+    def __init__(self, path_to_vocab_files):
+        self.path_to_vocab_files = path_to_vocab_files
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {0: 'SOS', 1: 'EOS', 2: 'SOI', 3:'EOI', 4:'unk'}
-        self.n_words = 5  # Count SOS and EOS
+        self.index2word = {0: '<S>', 1: '</S>', 2: '<PAD>', 3: '<I>', 4:'</I>', 5:'<UNK>'}
+        self.n_words = 6  # Count SOS and EOS
         self.lang = English()
         self.tokenizer = self.lang.Defaults.create_tokenizer(self.lang)
 
@@ -54,19 +55,19 @@ class Vocab:
             
     def dump(self):
         """Dumps the vocab to disk"""
-        with open('word2index.json', 'w') as f:
+        with open(self.path_to_vocab_files + '/word2index.json', 'w') as f:
             json.dump(self.word2index, f)
 
-        with open('index2word.json', 'w') as f:
+        with open(self.path_to_vocab_files + '/index2word.json', 'w') as f:
             json.dump(self.index2word, f)
             
-        with open('word2count.json', 'w') as f:
+        with open(self.path_to_vocab_files + '/word2count.json', 'w') as f:
             json.dump(self.word2count, f)
         
 
-def create_vocab():
+def create_vocab(vocab_file_loc):
     """Creates a vocab based on the recipe train data"""
-    vocab = Vocab()
+    vocab = Vocab(vocab_file_loc)
     for j in range(9):
         file_path = f'../data/train{j}.json'
         
@@ -87,18 +88,18 @@ def create_vocab():
     print("Finished Vocab")
         
 
-def load_vocab():
+def load_vocab(vocab_file_loc):
     """Loads vocab from dump data"""
-    vocab = Vocab()
+    vocab = Vocab(vocab_file_loc)
     self.n_words = len(word2index)
     
-    with open('word2index.json', 'r') as f:
+    with open(vocab_file_loc + '/word2index.json', 'r') as f:
         vocab.word2index = json.load(f)
 
-    with open('index2word.json', 'r') as f:
+    with open(vocab_file_loc + '/index2word.json', 'r') as f:
         vocab.index2word = json.load(f)
 
-    with open('word2count.json', 'r') as f:
+    with open(vocab_file_loc + '/word2count.json', 'r') as f:
         vocab.word2count = json.load(f)
     
     return vocab
@@ -106,4 +107,9 @@ def load_vocab():
 
 
 if __name__ == "__main__":
-    create_vocab()
+
+
+    vocab_file_loc = './vocab_files'
+
+
+    create_vocab(vocab_file_loc)

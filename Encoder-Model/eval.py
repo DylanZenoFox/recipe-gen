@@ -126,10 +126,6 @@ class Solver():
 
 			end_instructions = self.end_instructions_classifier(decoder_hidden[0])
 
-			# Print the decoded instruction next to the actual instruction
-			print(str(i) + " Decoded: " + self.indices2string(decoded_instruction))
-			print(str(i) + " Actual: " + self.indices2string(target_instructions[i].tolist()))
-
 			decoder_input = decoder_output.detach()
 
 		return instructions
@@ -148,8 +144,6 @@ class Solver():
 				recipe_data = json.load(f)
 
 				for recipe in recipe_data:
-
-					print("Recipe 10:")
 					
 					title = recipe['title']
 
@@ -157,7 +151,13 @@ class Solver():
 
 					instructions = recipe['instructions']
 
-					print("Recipe " + iters + " (" + title + "): ")
+					print("Recipe " + str(iters) + " (" + str(title) + "): ")
+					print("Ingredients:")
+
+					for i in ingredients:
+						print(i)
+
+
 
 
 					title_input = self.get_title_indices(title)

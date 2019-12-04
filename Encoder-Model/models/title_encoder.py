@@ -12,20 +12,22 @@ class TitleEncoder(torch.nn.Module):
 	# Parameters:
 	#
 	# Input: 
+	#		shared_embeddings: shared embedding layer between title, ingredients, and instructions
 	# 		embedding_dim: dimension of the embedding vector
 	#		hidden_dim: dimension of the GRU hidden dimension
 	#		vocab_size: size of the vocabulary
 	#		bidirectional: Run as bidirectional RNN, Default = False
 
-	def __init__(self, embedding_dim, hidden_dim, vocab_size):
+	def __init__(self, shared_embeddings, embedding_dim, hidden_dim, vocab_size, bidirectional = False):
 
 		super(TitleEncoder,self).__init__()
 
 		self.hidden_dim = hidden_dim
 		self.embedding_dim = embedding_dim
 		self.vocab_size = vocab_size
+		self.bidirectional = bidirectional
 
-		self.embedding = nn.Embedding(vocab_size,embedding_dim)
+		self.embedding = shared_embeddings
 		self.gru = nn.GRU(embedding_dim, hidden_dim)
 
 
@@ -93,7 +95,9 @@ if(__name__ == '__main__'):
 						]
 						])
 
-	title_encoder = TitleEncoder(5,10,10)
+	embeddings = nn.Embedding(10,5)
+
+	title_encoder = TitleEncoder(embeddings,5,10,10)
 
 	out, hidden = title_encoder(test)
 	print(out)
