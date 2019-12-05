@@ -30,7 +30,7 @@ class IngredientsEncoder(torch.nn.Module):
 	#		vocab_size: size of the vocabulary
 	#		outer_bidirectional: Run outer RNN as bidirectional RNN, Default = True
 
-	def __init__(self, shared_embeddings, word_embed_dim, ingr_embed_dim, hidden_dim, vocab_size, outer_bidirectional=True):
+	def __init__(self, shared_embeddings, word_embed_dim, ingr_embed_dim, hidden_dim, vocab_size, outer_bidirectional, inner_bidirectional):
 
 		super(IngredientsEncoder, self).__init__()
 
@@ -39,11 +39,12 @@ class IngredientsEncoder(torch.nn.Module):
 		self.hidden_dim = hidden_dim
 		self.vocab_size = vocab_size
 		self.outer_bidirectional = outer_bidirectional
+		self.inner_bidirectional = inner_bidirectional
 
 		self.ingr_list_encoder = nn.GRU(ingr_embed_dim, hidden_dim, bidirectional = self.outer_bidirectional)
 
 		self.single_ingr_encoder = SingleIngredientEncoder(shared_embeddings = shared_embeddings, 
-			embedding_dim = self.word_embed_dim, hidden_dim = self.ingr_embed_dim, vocab_size= self.vocab_size)
+			embedding_dim = self.word_embed_dim, hidden_dim = self.ingr_embed_dim, vocab_size= self.vocab_size, inner_bidirectional = self.inner_bidirectional)
 
 
 	# Forward Pass of outer GRU
@@ -65,6 +66,7 @@ class IngredientsEncoder(torch.nn.Module):
 
 		# Collect inputs for each ingredients string
 		inputs = []
+		single_ingr_outputs = []
 
 		# Iterate through each ingredient and pass it to the single ingredient encoder 
 		for ingr in ingredients:
@@ -72,11 +74,15 @@ class IngredientsEncoder(torch.nn.Module):
 			ingr = torch.unsqueeze(ingr,0)
 
 			# Retrieve final hidden state representing encoding for ingredient i
-			_ , h = self.single_ingr_encoder(ingr)
+			single_ingr_output , h = self.single_ingr_encoder(ingr)
 
 			# Squeeze and append
 			h = torch.squeeze(h)
 			inputs.append(h)
+
+			single_ingr_outputs.append(single_ingr_output)
+
+
 
 		# Create tensor from list
 		inputs = torch.stack(inputs)
@@ -86,7 +92,12 @@ class IngredientsEncoder(torch.nn.Module):
 		# Pass these values to the outer GRU and obtain the outputs and hidden values
 		outputs , hidden = self.ingr_list_encoder(inputs,hidden)
 
-		return outputs , hidden
+		if(self.outer_bidirectional):
+
+			hidden = torch.unsqueeze(hidden[0].add(hidden[1]), 0)
+
+
+		return outputs , hidden , single_ingr_outputs
 
 
 	#TODO
@@ -117,16 +128,17 @@ class SingleIngredientEncoder(torch.nn.Module):
 	#		hidden_dim: dimension of the GRU hidden dimension
 	#		vocab_size: size of the vocabulary
 
-	def __init__(self, shared_embeddings, embedding_dim, hidden_dim, vocab_size):
+	def __init__(self, shared_embeddings, embedding_dim, hidden_dim, vocab_size, inner_bidirectional):
 
 		super(SingleIngredientEncoder,self).__init__()
 
 		self.embedding_dim = embedding_dim
 		self.hidden_dim = hidden_dim
 		self.vocab_size = vocab_size
+		self.inner_bidirectional = inner_bidirectional
 
 		self.embedding = shared_embeddings
-		self.gru = nn.GRU(embedding_dim,hidden_dim)
+		self.gru = nn.GRU(embedding_dim,hidden_dim, bidirectional = self.inner_bidirectional)
 
 
 
@@ -147,7 +159,7 @@ class SingleIngredientEncoder(torch.nn.Module):
 		batch_size = ingr_string.size(0)
 
 		#Initialize hidden state
-		hidden = self.initHidden(batch_size)
+		hidden = self.initHidden(batch_size, self.inner_bidirectional)
 
 		#Get embedding for each word
 		embedded = self.embedding(ingr_string)
@@ -156,21 +168,34 @@ class SingleIngredientEncoder(torch.nn.Module):
 		#Get outputs for each state and hidden state at the end
 		output, hidden = self.gru(embedded,hidden)
 
+
+		if(self.inner_bidirectional):
+
+			hidden = torch.unsqueeze(hidden[0].add(hidden[1]), 0)
+
+
 		return output, hidden
 
 
 
-	def initHidden(self,batch_size):
+	def initHidden(self,batch_size, bidirectional):
+
+		if(bidirectional):
+			return torch.zeros(2, batch_size ,self.hidden_dim, device = device)
+		else:
 			return torch.zeros(1, batch_size ,self.hidden_dim, device = device)
+
 
 
 
 if(__name__ == '__main__'):
 
 	test = [ 
-
+				# Ingr 1
 				torch.tensor([1,2,3,4,5]),
+				# Ingr 2
 				torch.tensor([2,4,6,8]),
+				# Ingr 3
 				torch.tensor([4,3])
 
 			]
@@ -178,12 +203,15 @@ if(__name__ == '__main__'):
 
 	embeddings = nn.Embedding(10,5)
 
-	ingr_encoder = IngredientsEncoder(embeddings, 5,10,20,10, outer_bidirectional = True)
+	ingr_encoder = IngredientsEncoder(embeddings, 5,10,20,10, outer_bidirectional = True, inner_bidirectional = True)
 	
-	outputs, hidden = ingr_encoder(test) 
+	outputs, hidden, single_ingr_outputs = ingr_encoder(test) 
 
 	print(outputs)
 	print(outputs.shape)
 
 	print(hidden)
 	print(hidden.shape)
+
+	print(single_ingr_outputs)
+	print(single_ingr_outputs[0].shape)

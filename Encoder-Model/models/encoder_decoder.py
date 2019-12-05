@@ -19,7 +19,7 @@ class EncoderDecoder(torch.nn.Module):
 
 
 	def __init__(self, vocab_size, word_embedding_dim, title_hidden_dim, ingr_list_hidden_dim, single_ingr_hidden_dim, single_instr_hidden_dim, end_instr_hidden_dim,
-		max_num_instr, max_instr_length, single_instr_tf_ratio, instr_list_tf_ratio, title_bidirectional, ingr_bidirectional):
+		max_num_instr, max_instr_length, single_instr_tf_ratio, instr_list_tf_ratio, title_bidirectional, ingr_outer_bidirectional, ingr_inner_bidirectional):
 
 		super(EncoderDecoder, self).__init__()
 
@@ -44,7 +44,8 @@ class EncoderDecoder(torch.nn.Module):
 		self.instr_list_tf_ratio = instr_list_tf_ratio
 
 		self.title_bidirectional = title_bidirectional
-		self.ingr_bidirectional = ingr_bidirectional
+		self.ingr_outer_bidirectional = ingr_outer_bidirectional
+		self.ingr_inner_bidirectional = ingr_inner_bidirectional
 
 
 		# MODELS 
@@ -58,7 +59,7 @@ class EncoderDecoder(torch.nn.Module):
 
 		# Ingredients Encoder
 		self.ingredients_encoder = IngredientsEncoder(shared_embeddings = self.shared_word_embeddings,word_embed_dim = self.word_embedding_dim, ingr_embed_dim = self.single_ingr_hidden_dim,
-			hidden_dim = self.ingr_list_hidden_dim, vocab_size = self.vocab_size, outer_bidirectional = self.ingr_bidirectional).to(device)
+			hidden_dim = self.ingr_list_hidden_dim, vocab_size = self.vocab_size, outer_bidirectional = self.ingr_outer_bidirectional, inner_bidirectional = self.ingr_inner_bidirectional).to(device)
 
 		# Instructions Decoder
 		self.instructions_decoder = InstructionsDecoder(shared_embeddings = self.shared_word_embeddings, word_embedding_dim = self.word_embedding_dim, single_instr_hidden_dim = self.single_instr_hidden_dim,
@@ -95,7 +96,7 @@ class EncoderDecoder(torch.nn.Module):
 
 		# Encode title and ingredients
 		title_outputs, encoded_title = self.title_encoder(title)
-		ingr_outputs, encoded_ingr = self.ingredients_encoder(ingredients)
+		ingr_outputs, encoded_ingr, single_ingr_outputs = self.ingredients_encoder(ingredients)
 
 		# Concatenate to get first hidden layer of decoder
 		decoder_hidden = torch.cat([encoded_title,encoded_ingr], dim = 2)
@@ -136,7 +137,7 @@ class EncoderDecoder(torch.nn.Module):
 		# Using teacher forcing 
 		if(use_teacher_forcing):
 
-			print("Using instruction level teacher forcing")
+			#print("Using instruction level teacher forcing")
 
 			for i in range(len(target_instructions)):
 
@@ -145,8 +146,8 @@ class EncoderDecoder(torch.nn.Module):
 
 				instructions.append(decoded_instruction)
 
-				print("Decoded Instruction: " + str(lang.indices2string(decoded_instruction)))
-				print("Actual Instruction: " + str(lang.indices2string(target_instructions[i].tolist())))
+				#print("Decoded Instruction: " + str(lang.indices2string(decoded_instruction)))
+				#print("Actual Instruction: " + str(lang.indices2string(target_instructions[i].tolist())))
 
 				word_loss += loss
 
@@ -158,13 +159,13 @@ class EncoderDecoder(torch.nn.Module):
 
 					single_instr_cl_loss = end_instr_criterion(end_instructions_pred, torch.tensor([1], device = device))
 
-					print("Should End [1]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
+					#print("Should End [1]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
 
 					end_instr_loss += single_instr_cl_loss
 				else:
 					single_instr_cl_loss = end_instr_criterion(end_instructions_pred, torch.tensor([0], device = device))
 
-					print("Should not end [0]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
+					#print("Should not end [0]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
 
 					end_instr_loss += single_instr_cl_loss
 
@@ -173,7 +174,7 @@ class EncoderDecoder(torch.nn.Module):
 		# Not using teacher forcing
 		else:
 
-			print("Not using instruction level teacher forcing")
+			#print("Not using instruction level teacher forcing")
 
 			for i in range(len(target_instructions)):
 
@@ -182,8 +183,8 @@ class EncoderDecoder(torch.nn.Module):
 
 				instructions.append(decoded_instruction)
 
-				print("Decoded Instruction: " + str(lang.indices2string(decoded_instruction)))
-				print("Actual Instruction: " + str(lang.indices2string(target_instructions[i].tolist())))
+				#print("Decoded Instruction: " + str(lang.indices2string(decoded_instruction)))
+				#print("Actual Instruction: " + str(lang.indices2string(target_instructions[i].tolist())))
 
 				word_loss += loss
 
@@ -197,13 +198,13 @@ class EncoderDecoder(torch.nn.Module):
 
 					single_instr_cl_loss = end_instr_criterion(end_instructions_pred, torch.tensor([1], device = device))
 
-					print("Should End [1]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
+					#print("Should End [1]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
 
 					end_instr_loss += single_instr_cl_loss
 				else:
 					single_instr_cl_loss = end_instr_criterion(end_instructions_pred, torch.tensor([0], device = device))
 
-					print("Should not end [0]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
+					#print("Should not end [0]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
 
 					end_instr_loss += single_instr_cl_loss
 

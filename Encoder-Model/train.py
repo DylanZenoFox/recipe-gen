@@ -27,23 +27,26 @@ class Solver():
 
 		self.vocab_size = self.lang.get_vocab_size()
 
-		self.word_embedding_dim = 100
+		self.word_embedding_dim = 128
 
-		self.title_hidden_dim = 200
+		self.title_hidden_dim = 256
+		self.title_bidirectional = False
 
-		self.ingr_list_hidden_dim = 200
-		self.single_ingr_hidden_dim = 150
-		self.ingredients_bidirectional = False
+		self.ingr_list_hidden_dim = 256
+		self.single_ingr_hidden_dim = 192
 
-		self.single_instr_hidden_dim = 200
+		self.ingredients_outer_bidirectional = True
+		self.ingredients_inner_bidirectional = False
+
+		self.single_instr_hidden_dim = 256
 		self.max_instr_length = 25
 
-		self.max_num_instructions = 10
+		self.max_num_instructions = 15
 
 		self.single_instr_tf_ratio = 0.5
 		self.instr_list_tf_ratio = 0.5
 
-		self.end_instr_hidden_dim = 50
+		self.end_instr_hidden_dim = 128
 
 		self.learning_rate = 0.01
 
@@ -51,7 +54,8 @@ class Solver():
 
 		self.encoder_decoder = EncoderDecoder(vocab_size = self.vocab_size, word_embedding_dim = self.word_embedding_dim, title_hidden_dim = self.title_hidden_dim, ingr_list_hidden_dim = self.ingr_list_hidden_dim,
 			single_ingr_hidden_dim = self.single_ingr_hidden_dim, single_instr_hidden_dim = self.single_instr_hidden_dim, end_instr_hidden_dim = self.end_instr_hidden_dim, max_num_instr = self.max_num_instructions,
-			max_instr_length = self.max_instr_length, single_instr_tf_ratio = self.single_instr_tf_ratio, instr_list_tf_ratio = self.instr_list_tf_ratio, title_bidirectional = False, ingr_bidirectional = False).to(device)
+			max_instr_length = self.max_instr_length, single_instr_tf_ratio = self.single_instr_tf_ratio, instr_list_tf_ratio = self.instr_list_tf_ratio, title_bidirectional = self.title_bidirectional, 
+			ingr_outer_bidirectional = self.ingredients_inner_bidirectional, ingr_inner_bidirectional = self.ingredients_inner_bidirectional).to(device)
 
 		# OPTIMIZER
 
@@ -66,6 +70,58 @@ class Solver():
 
 		if(self.load_from_path is not None):
 			self.load_model(self.load_from_path)
+
+
+		print("====================INITIALIZING MODEL====================")
+		print("\n")
+		print("=====================HYPERPARAMETERS======================")
+		print("")
+		print("---------------------Vocab Statistics---------------------")
+		print("")
+		print("Vocab Size: " + str(self.vocab_size))
+		print("")
+		print("----------------------Embedding Sizes---------------------")
+		print("")
+		print("Word Embedding Dimension: " + str(self.word_embedding_dim))
+		print("Title Embedding Dimension: " + str(self.title_hidden_dim))
+		print("Single Ingredient Embedding Dimension: " + str(self.single_ingr_hidden_dim))
+		print("Ingredients List Embedding Dimension: " +str(self.ingr_list_hidden_dim))
+		print("Instructions List Embedding Dimension: " + str(self.ingr_list_hidden_dim + self.title_hidden_dim))
+		print("Single Instruction Embedding Dimension: "  + str(self.single_instr_hidden_dim))
+		print("")
+		print("-----------------------Bidirectional----------------------")
+		print("")
+		print("Title Bidirectional Encoder: " + str(self.title_bidirectional))
+		print("Single Ingredient Bidirectional Encoder: " + str(self.ingredients_inner_bidirectional))
+		print("Ingredients List Bidirectional Encoder: " + str(self.ingredients_outer_bidirectional))
+		print("")
+		print("----------------------Teacher Forcing---------------------")
+		print("")
+		print("Instruction List Teacher Forcing Ratio: " + str(self.instr_list_tf_ratio))
+		print("Single Instruction Teacher Forcing Ratio: " + str(self.single_instr_tf_ratio))
+		print("")
+		print("------------------Generation Limitations------------------")
+		print("")
+		print("Max Instruction Length: " + str(self.max_instr_length))
+		print("Max Number of Instructions: " + str(self.max_num_instructions))
+		print("")
+		print("------------------------Attention-------------------------")
+		print("")
+		print("TODO")
+		print("")
+		print("------------------------Load/Save-------------------------")
+		print("")
+		print("Loading Checkpoint From: " + str(self.load_from_path))
+		print("Saving Checkpoints To: " + str(self.save_to_path))
+		print("Save Frequency: " + str(self.save_frequency))
+		print("")
+		print("---------------------Miscellaneous------------------------")
+		print("")
+		print("Hidden Dimension of EoI Classifier: " + str(self.end_instr_hidden_dim))
+		print("")
+		print("==========================================================")
+		print("")
+
 
 
 

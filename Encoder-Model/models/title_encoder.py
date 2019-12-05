@@ -18,7 +18,7 @@ class TitleEncoder(torch.nn.Module):
 	#		vocab_size: size of the vocabulary
 	#		bidirectional: Run as bidirectional RNN, Default = False
 
-	def __init__(self, shared_embeddings, embedding_dim, hidden_dim, vocab_size, bidirectional = False):
+	def __init__(self, shared_embeddings, embedding_dim, hidden_dim, vocab_size, bidirectional):
 
 		super(TitleEncoder,self).__init__()
 
@@ -28,7 +28,7 @@ class TitleEncoder(torch.nn.Module):
 		self.bidirectional = bidirectional
 
 		self.embedding = shared_embeddings
-		self.gru = nn.GRU(embedding_dim, hidden_dim)
+		self.gru = nn.GRU(embedding_dim, hidden_dim, bidirectional = self.bidirectional)
 
 
 
@@ -41,8 +41,8 @@ class TitleEncoder(torch.nn.Module):
 	# 		title: Tensor of shape (batch_size, seq_len) representing a batch of sentences
 	#
 	# Output: 
-	#		output:  Tensor of shape (seq_len, batch_size, hidden_size) representing output for each timestep for each batch
-	#		hidden:  Tensor of shape (num_layers, batch_size, hidden_size) representing the last output of the hidden state
+	#		output:  Tensor of shape (seq_len, batch_size, hidden_size * num_directions) representing output for each timestep for each batch
+	#		hidden:  Tensor of shape (num_layers * num_directions, batch_size, hidden_size) representing the last output of the hidden state
 
 	def forward(self, title):
 
@@ -50,16 +50,21 @@ class TitleEncoder(torch.nn.Module):
 		batch_size = title.size(0)
 
 		#Initialize hidden state
-		hidden = self.initHidden(batch_size)
+		hidden = self.initHidden(batch_size, self.bidirectional)
 
 		#Get embedding for each word
 		embedded = self.embedding(title)
 		embedded = torch.transpose(embedded,0,1)
 
 		#Get outputs for each state and hidden state at the end
-		output, hidden = self.gru(embedded,hidden)
+		outputs, hidden = self.gru(embedded,hidden)
 
-		return output, hidden
+		if(self.bidirectional):
+
+			hidden = torch.unsqueeze(hidden[0].add(hidden[1]),0)
+
+
+		return outputs, hidden
 
 
 
@@ -73,8 +78,13 @@ class TitleEncoder(torch.nn.Module):
 	# Output: 
 	#		Tensor of shape (num_layers = 1, batch_size, hidden_dim) representing initial hidden state
 
-	def initHidden(self,batch_size):
-		return torch.zeros(1, batch_size ,self.hidden_dim, device = device)
+	def initHidden(self,batch_size, bidirectional):
+
+		if(bidirectional):
+			return torch.zeros(2, batch_size ,self.hidden_dim, device = device)
+		else:
+			return torch.zeros(1, batch_size ,self.hidden_dim, device = device)
+
 
 
 
@@ -85,11 +95,6 @@ if(__name__ == '__main__'):
 
 
 	test = torch.tensor([
-
-						[
-							5,8,6,7,6
-						],
-
 						[
 							4,8,6,3,6
 						]
@@ -97,7 +102,7 @@ if(__name__ == '__main__'):
 
 	embeddings = nn.Embedding(10,5)
 
-	title_encoder = TitleEncoder(embeddings,5,10,10)
+	title_encoder = TitleEncoder(embeddings,5,10,10, bidirectional = True)
 
 	out, hidden = title_encoder(test)
 	print(out)
