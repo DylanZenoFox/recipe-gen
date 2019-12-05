@@ -21,7 +21,7 @@ class Solver():
 
 		# LANG CLASS
 
-		self.lang = Lang(path_to_vocab_files= 'vocab_files/')
+		self.lang = Lang(path_to_vocab_files= './vocab_files/')
 
 		# HYPERPARAMETERS 
 
@@ -30,13 +30,13 @@ class Solver():
 		self.word_embedding_dim = 128
 
 		self.title_hidden_dim = 256
-		self.title_bidirectional = False
+		self.title_bidirectional = True
 
 		self.ingr_list_hidden_dim = 256
 		self.single_ingr_hidden_dim = 192
 
 		self.ingredients_outer_bidirectional = True
-		self.ingredients_inner_bidirectional = False
+		self.ingredients_inner_bidirectional = True
 
 		self.single_instr_hidden_dim = 256
 		self.max_instr_length = 25
@@ -76,8 +76,10 @@ class Solver():
 		print("\n")
 		print("=====================HYPERPARAMETERS======================")
 		print("")
-		print("---------------------Vocab Statistics---------------------")
+		print("---------------------Model Statistics---------------------")
 		print("")
+
+		print("Number of Model Parameters: " + str(sum(p.numel() for p in self.encoder_decoder.parameters())))
 		print("Vocab Size: " + str(self.vocab_size))
 		print("")
 		print("----------------------Embedding Sizes---------------------")
