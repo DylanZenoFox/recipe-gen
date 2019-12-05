@@ -108,13 +108,13 @@ class Solver():
 
 
 
-	def trainIters(self, print_every = 10):
+	def trainIters(self, print_every = 10, num_epochs = 1, num_train_files = 10):
 
 		iters = 0
 		total_loss = 0
 
 
-		for i in range(1):
+		for i in range(num_train_files):
 
 			with open('../data/train' + str(i) + ".json") as f:
 
