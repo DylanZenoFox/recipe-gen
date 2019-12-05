@@ -161,12 +161,12 @@ class Solver():
 
 		print("Updated Gradients")
 
-		return total_loss.item() / len(target_instructions)
+		return (total_loss.item() / len(target_instructions)) , instructions
 
 
 
 
-	def trainIters(self, print_every = 10, num_epochs = 1, num_train_files = 10):
+	def trainIters(self, print_every = 20, num_epochs = 1, num_train_files = 10):
 
 		iters = 0
 		total_loss = 0
@@ -193,15 +193,30 @@ class Solver():
 					ingredients_input = self.lang.get_ingredient_indices(ingredients)
 					instructions_input = self.lang.get_instruction_indices(instructions)
 
-					total_loss += self.train_example(title_input, ingredients_input, instructions_input)
+					loss, decoded_instructions = self.train_example(title_input, ingredients_input, instructions_input)
 
-					print("==============================================================================")
+					total_loss += loss
+
 
 					iters += 1
 					if(iters % print_every == 0):
 
-						print("Total Loss: " + str(total_loss/print_every))
+						print("ACTUAL INSTRUCTIONS:")
+
+						for i in range(len(instructions)):
+							print(str(i) + ": " + instructions[i])
+
+						print("DECODED INSTRUCTIONS:")
+
+						for i in range(len(decoded_instructions)):
+							print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i]))
+
+						print(" ")
+
+						print("Average per Instruction Loss for the Past " + str(print_every) + " Recipes: " + str(total_loss/print_every))
 						total_loss = 0 
+
+					print("==============================================================================")
 
 
 					if((self.save_to_path is not None) and (iters % self.save_frequency == 0)):
