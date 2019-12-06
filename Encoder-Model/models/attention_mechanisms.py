@@ -30,7 +30,7 @@ class IngrToInstrAttention(torch.nn.Module):
 		self.attention_output_dim = encoder_output_dim
 
 		self.projHidden2Encoder = nn.Linear(decoder_hidden_dim, encoder_output_dim)
-		self.proj2Output = nn.Linear(encoder_output_dim, attention_output_dim)
+		self.proj2Output = nn.Linear(encoder_output_dim + decoder_hidden_dim, attention_output_dim)
 
 
 
@@ -40,7 +40,7 @@ class IngrToInstrAttention(torch.nn.Module):
 	#	
 	# Input:  
 	#		ingr_outputs: tensor of shape (seq_len, batch_size, encoder_output_size) representing the outputs of the ingredient encoder
-	#		decoder_output: tensor of shape (1, batch_size, instr_list_hidden_dim) current hidden state of the decoder 
+	#		decoder_hidden: tensor of shape (1, batch_size, instr_list_hidden_dim) current hidden state of the decoder 
 	#
 	# Output:
 	# 		output: tensor of shape (1, batch_size, attention_output) representing output of attention mechanism
@@ -48,28 +48,37 @@ class IngrToInstrAttention(torch.nn.Module):
 
 	def forward(self, ingr_outputs, decoder_hidden):
 
-		#print("Utilizing Attention")
-
-		#print(ingr_outputs.shape)
-		#print(decoder_hidden.shape)
+		# Save decoder hidden for concat later
+		ref = decoder_hidden
 		
+		# Project hidden state down to size of encoder hidden state
 		decoder_hidden = self.projHidden2Encoder(decoder_hidden)
 
+		# Reshape tensors for batch matrix multiplication
 		decoder_hidden = torch.transpose(torch.transpose(decoder_hidden,0,1),1,2)
 		ingr_outputs = torch.transpose(ingr_outputs,0,1)
 
+		# Compute alignment scores
 		align_scores = torch.bmm(ingr_outputs, decoder_hidden)
-
 		align_scores = torch.transpose(align_scores,1,2)
 
+		# Compute attention weights
 		attn_weights = F.softmax(align_scores, dim = 2)
 
+		#Compute context vecotor for this timestep
 		context = torch.bmm(attn_weights, ingr_outputs)
+		context = torch.transpose(context,0,1)
 
-		output = self.proj2Output(torch.transpose(context,0,1))
+		# Concatenate context vector with decoder hidden state
+		concat = torch.cat((context,ref), dim = 2)
+
+		# Project to output space
+		output = self.proj2Output(concat)
 
 		return output
 
+
+## TESTING
 
 if(__name__ == '__main__'):
 
@@ -101,7 +110,10 @@ if(__name__ == '__main__'):
 	#print(ingr_outputs.shape)
 	#print(decoder_hidden.shape)
 
-	testAttention(ingr_outputs, decoder_hidden)
+	output = testAttention(ingr_outputs, decoder_hidden)
+
+	print(output)
+	print(output.shape)
 
 
 
