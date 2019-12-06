@@ -96,6 +96,8 @@ class IngredientsEncoder(torch.nn.Module):
 
 			hidden = torch.unsqueeze(hidden[0].add(hidden[1]), 0)
 
+		#print("Encoder Output Shape: " + str(outputs.shape ))
+		#print("Bidirectional: " + str(self.outer_bidirectional))
 
 		return outputs , hidden , single_ingr_outputs
 
@@ -151,7 +153,7 @@ class SingleIngredientEncoder(torch.nn.Module):
 	#
 	# Output: 
 	#		output:  Tensor of shape (seq_len, batch_size, hidden_size) representing output for each timestep for each batch
-	#		hidden:  Tensor of shape (num_layers * num_directions, batch_size, hidden_size) representing the last output of the hidden state
+	#		hidden:  Tensor of shape (num_layers, batch_size, hidden_size) representing the last output of the hidden state
 
 	def forward(self, ingr_string):
 

@@ -19,7 +19,7 @@ class EncoderDecoder(torch.nn.Module):
 
 
 	def __init__(self, vocab_size, word_embedding_dim, title_hidden_dim, ingr_list_hidden_dim, single_ingr_hidden_dim, single_instr_hidden_dim, end_instr_hidden_dim,
-		max_num_instr, max_instr_length, single_instr_tf_ratio, instr_list_tf_ratio, title_bidirectional, ingr_outer_bidirectional, ingr_inner_bidirectional):
+		max_num_instr, max_instr_length, single_instr_tf_ratio, instr_list_tf_ratio, title_bidirectional, ingr_outer_bidirectional, ingr_inner_bidirectional, ingr_instr_attention):
 
 		super(EncoderDecoder, self).__init__()
 
@@ -31,6 +31,10 @@ class EncoderDecoder(torch.nn.Module):
 
 		self.ingr_list_hidden_dim = ingr_list_hidden_dim
 		self.single_ingr_hidden_dim = single_ingr_hidden_dim
+
+		self.ingr_list_output_dim = ingr_list_hidden_dim
+		if(ingr_outer_bidirectional):
+			self.ingr_list_output_dim *= 2
 
 		self.instr_list_hidden_dim = self.ingr_list_hidden_dim + self.title_hidden_dim
 		self.single_instr_hidden_dim = single_instr_hidden_dim
@@ -47,6 +51,7 @@ class EncoderDecoder(torch.nn.Module):
 		self.ingr_outer_bidirectional = ingr_outer_bidirectional
 		self.ingr_inner_bidirectional = ingr_inner_bidirectional
 
+		self.ingr_instr_attention = ingr_instr_attention
 
 		# MODELS 
 
@@ -63,7 +68,7 @@ class EncoderDecoder(torch.nn.Module):
 
 		# Instructions Decoder
 		self.instructions_decoder = InstructionsDecoder(shared_embeddings = self.shared_word_embeddings, word_embedding_dim = self.word_embedding_dim, single_instr_hidden_dim = self.single_instr_hidden_dim,
-			instr_list_hidden_dim = self.instr_list_hidden_dim, vocab_size = self.vocab_size, max_instr_length = self.max_instr_length, teacher_forcing_ratio = self.single_instr_tf_ratio).to(device)
+			instr_list_hidden_dim = self.instr_list_hidden_dim, vocab_size = self.vocab_size, ingredients_output_dim = self.ingr_list_output_dim, max_instr_length = self.max_instr_length, teacher_forcing_ratio = self.single_instr_tf_ratio).to(device)
 
 		self.end_instructions_classifier = EndInstructionsClassifier(instr_embed_dim = self.single_instr_hidden_dim, hidden_dim = self.end_instr_hidden_dim).to(device)
 
@@ -115,8 +120,13 @@ class EncoderDecoder(torch.nn.Module):
 
 			for i in range(self.max_num_instr):
 
-				decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
-					word_criterion, targets = None)
+				if(self.ingr_instr_attention):
+					decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
+						word_criterion, targets = None, ingr_outputs = ingr_outputs)
+				else:
+					decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
+						word_criterion, targets = None, ingr_outputs = None)
+
 
 				instructions.append(decoded_instruction)
 
@@ -141,8 +151,12 @@ class EncoderDecoder(torch.nn.Module):
 
 			for i in range(len(target_instructions)):
 
-				decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
-					word_criterion, targets = target_instructions[i])
+				if(self.ingr_instr_attention):
+					decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
+						word_criterion, targets = target_instructions[i], ingr_outputs = ingr_outputs)
+				else:
+					decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
+						word_criterion, targets = target_instructions[i], ingr_outputs = None)
 
 				instructions.append(decoded_instruction)
 
@@ -178,8 +192,12 @@ class EncoderDecoder(torch.nn.Module):
 
 			for i in range(len(target_instructions)):
 
-				decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
-					word_criterion, targets = target_instructions[i])
+				if(self.ingr_instr_attention):
+					decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
+						word_criterion, targets = target_instructions[i], ingr_outputs = ingr_outputs)
+				else:
+					decoder_output, decoder_hidden, decoded_instruction, loss = self.instructions_decoder(decoder_input, decoder_hidden, 
+						word_criterion, targets = target_instructions[i], ingr_outputs = None)
 
 				instructions.append(decoded_instruction)
 

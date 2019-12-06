@@ -1,3 +1,5 @@
+from models.attention_mechanisms import IngrToInstrAttention
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,11 +23,11 @@ class InstructionsDecoder(torch.nn.Module):
 	#		single_instr_hidden_dim: dimension of the hidden state for the single instruction decoder GRU
 	#		word_embedding_dim: dimension of the word embeddings
 	#		instr_list_hidden_dim: dimension of the hidden layer for all the recipe instructions
-	#		end_instr_hidden_dim: dimension of the hidden layer of the End of Instructions binary classifier
+	#		ingredients_hidden_dim: dimension of the ingredients hidden layer, used for attention
 	# 		max_instr_length: max length of instructions
 	#		teacher_forcing_ratio: what proportion of innerGRU decoding sessions will be teacher forced
 
-	def __init__(self, shared_embeddings, word_embedding_dim, single_instr_hidden_dim, instr_list_hidden_dim, vocab_size, max_instr_length = 20, teacher_forcing_ratio = 0.5):
+	def __init__(self, shared_embeddings, word_embedding_dim, single_instr_hidden_dim, instr_list_hidden_dim, vocab_size, ingredients_output_dim, max_instr_length = 20, teacher_forcing_ratio = 0.5):
 
 		super(InstructionsDecoder,self).__init__()
 
@@ -33,13 +35,14 @@ class InstructionsDecoder(torch.nn.Module):
 		self.word_embedding_dim = word_embedding_dim
 		self.instr_list_hidden_dim = instr_list_hidden_dim
 		self.vocab_size = vocab_size
-		#self.end_instr_hidden_dim = end_instr_hidden_dim
 		self.max_instr_length = max_instr_length
 		self.teacher_forcing_ratio = teacher_forcing_ratio
 
 		self.outerGRU = nn.GRU(single_instr_hidden_dim, instr_list_hidden_dim)
 
 		self.outer2inner = nn.Linear(instr_list_hidden_dim, single_instr_hidden_dim)
+
+		self.ingr2instr_attention = IngrToInstrAttention(decoder_hidden_dim = instr_list_hidden_dim, encoder_output_dim = ingredients_output_dim, attention_output_dim = single_instr_hidden_dim)
 
 		self.innerGRU = SingleInstructionDecoder(shared_embeddings = shared_embeddings, embedding_dim= word_embedding_dim, hidden_dim = single_instr_hidden_dim, vocab_size = vocab_size)
 
@@ -54,22 +57,28 @@ class InstructionsDecoder(torch.nn.Module):
 	#		input: tensor of shape (1, batch_size , instr_hidden_dim) the last hidden state of the previous inner GRU
 	#		hidden: tensor of shape (1, batch_size, rec_hidden_dim) representing the hidden state for the previous timestep of the outer GRU
 	#		word_loss: loss criterion for the word level
-	#		end_instr_loss: loss criterion for the end instructions classifier
 	#		targets: tensor of shape (num_words) containing target indices for ground truth instructions.  None if evaluating.
+	#		ingr_outputs: tensor of shape (seq_len, batch_size, encoder_output_size) representing the outputs of the ingredient encoder. Used for attention
 	#
 	# Output:
-	#		output: tensor of shape (batch_size, instr_hidden_dim) representing the last hidden state of the inner GRU for this timestep
-	#		hidden: tensor of shape (1, batch_size, rec_hidden_dim) representing the hidden state of the current timestep
+	#		output: tensor of shape (batch_size, single_instr_hidden_dim) representing the last hidden state of the inner GRU for this timestep
+	#		hidden: tensor of shape (1, batch_size, instr_list_hidden_dim) representing the hidden state of the current timestep
 	#		decoded_instruction: tensor of shape (num_words) containing indices for words in instructions
 	# 		loss: total loss contributed to by this stage of GRU
 
-	def forward(self, input, hidden, word_loss, targets = None):
+	def forward(self, input, hidden, word_loss, targets = None, ingr_outputs = None):
 
 		#Get the next state from the outer GRU using the previous hidden state and the input from the last timestep
-		single_instr , hidden = self.outerGRU(input, hidden)
+		single_instr, hidden = self.outerGRU(input, hidden)
 
-		# Use a linear layer to convert the hidden state of the outer GRU to the first hidden state of the inner GRU
-		single_instr = self.outer2inner(single_instr)
+		# Using ingredient to instruction attention
+		if(ingr_outputs is not None):
+			single_instr = self.ingr2instr_attention(ingr_outputs, single_instr)
+
+		# If no attention, use a linear layer to convert the hidden state of the outer GRU to the first hidden state of the inner GRU
+		else:
+			single_instr = self.outer2inner(single_instr)
+
 		single_instr = F.relu(single_instr)
 
 		#Always create first input as SOS token
@@ -292,7 +301,8 @@ class EndInstructionsClassifier(torch.nn.Module):
 if(__name__ == '__main__'):
 
 	embeddings = nn.Embedding(10,3)
-	decoder = InstructionsDecoder( shared_embeddings= embeddings, single_instr_hidden_dim = 5, word_embedding_dim = 3, instr_list_hidden_dim  = 10, vocab_size = 10)
+	decoder = InstructionsDecoder( shared_embeddings= embeddings, single_instr_hidden_dim = 5, word_embedding_dim = 3, instr_list_hidden_dim  = 10, 
+		vocab_size = 10, ingredients_hidden_dim = 6)
 	crit = nn.NLLLoss()
 
 	test = torch.tensor([

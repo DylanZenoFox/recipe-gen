@@ -48,6 +48,8 @@ class Solver():
 
 		self.end_instr_hidden_dim = 128
 
+		self.ingr_instr_attention = True
+
 		self.learning_rate = 0.01
 
 		# MODELS
@@ -55,7 +57,7 @@ class Solver():
 		self.encoder_decoder = EncoderDecoder(vocab_size = self.vocab_size, word_embedding_dim = self.word_embedding_dim, title_hidden_dim = self.title_hidden_dim, ingr_list_hidden_dim = self.ingr_list_hidden_dim,
 			single_ingr_hidden_dim = self.single_ingr_hidden_dim, single_instr_hidden_dim = self.single_instr_hidden_dim, end_instr_hidden_dim = self.end_instr_hidden_dim, max_num_instr = self.max_num_instructions,
 			max_instr_length = self.max_instr_length, single_instr_tf_ratio = self.single_instr_tf_ratio, instr_list_tf_ratio = self.instr_list_tf_ratio, title_bidirectional = self.title_bidirectional, 
-			ingr_outer_bidirectional = self.ingredients_inner_bidirectional, ingr_inner_bidirectional = self.ingredients_inner_bidirectional).to(device)
+			ingr_outer_bidirectional = self.ingredients_outer_bidirectional, ingr_inner_bidirectional = self.ingredients_inner_bidirectional, ingr_instr_attention = self.ingr_instr_attention).to(device)
 
 		# OPTIMIZER
 
@@ -109,7 +111,7 @@ class Solver():
 		print("")
 		print("------------------------Attention-------------------------")
 		print("")
-		print("TODO")
+		print("Ingredient-Instruction Attention: " + str(self.ingr_instr_attention))
 		print("")
 		print("------------------------Load/Save-------------------------")
 		print("")
