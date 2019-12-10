@@ -183,6 +183,12 @@ class Solver():
 		ingredients = batch[1]
 		target_instructions = batch[2]
 
+		print(title.shape)
+		print(ingredients[0].shape)
+		print(len(ingredients))
+		print(instructions[0].shape)
+		print(len(instructions))
+
 		#print("Target Instructions Length: " + str(len(target_instructions)))
 
 		instructions, word_loss, end_instr_loss = self.encoder_decoder(title, ingredients, self.word_criterion, self.end_instr_criterion, target_instructions)
@@ -258,7 +264,7 @@ class Solver():
 						print("Average per Instruction Loss for the Past " + str(print_every) + " Recipes: " + str(total_loss/print_every))
 						total_loss = 0
 
-					print("==============================================================================")
+						print("==============================================================================")
 
 
 					if((self.save_to_path is not None) and (iters % self.save_frequency == 0)):

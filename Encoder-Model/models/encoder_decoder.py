@@ -66,6 +66,7 @@ class EncoderDecoder(torch.nn.Module):
 		self.title_encoder = TitleEncoder(shared_embeddings= self.shared_word_embeddings, embedding_dim = self.word_embedding_dim, 
 			hidden_dim = self.title_hidden_dim, vocab_size = self.vocab_size, bidirectional= self.title_bidirectional).to(device)
 
+
 		# Ingredients Encoder
 		self.ingredients_encoder = IngredientsEncoder(shared_embeddings = self.shared_word_embeddings,word_embed_dim = self.word_embedding_dim, ingr_embed_dim = self.single_ingr_hidden_dim,
 			hidden_dim = self.ingr_list_hidden_dim, vocab_size = self.vocab_size, outer_bidirectional = self.ingr_outer_bidirectional, inner_bidirectional = self.ingr_inner_bidirectional).to(device)
