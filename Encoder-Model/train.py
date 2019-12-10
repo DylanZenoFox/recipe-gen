@@ -177,6 +177,10 @@ class Solver():
 
 	def train_batch(self, batch):
 
+		print("Starting Batch Train")
+		print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
+
+
 		self.optimizer.zero_grad()
 
 		title = batch[0]
@@ -207,6 +211,11 @@ class Solver():
 		self.optimizer.step()
 
 		#print("Updated Gradients")
+
+		print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
+
+
+		print("Ending Batch Train")
 
 		return (total_loss.detach().item() / len(target_instructions)) , instructions
 
@@ -335,7 +344,6 @@ class Solver():
 		# print('instr_batch_list[0]\t', instr_batch_list[0].shape)
 		# print('\n-------------')
 
-		print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
 
 		return [title_batch, ingr_batch_list, instr_batch_list]
 
@@ -360,6 +368,8 @@ class Solver():
 				unpadded_batch = []
 				if 10*len(batches) % total_batches == 0:
 					print(len(batches), 'batches\t', round((len(batches)/total_batches)*100), '%')
+					print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
+
 			title = recipe['title']
 			ingredients = recipe['ingredients']
 			instructions = recipe['instructions']
