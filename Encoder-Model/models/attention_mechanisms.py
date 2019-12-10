@@ -5,7 +5,6 @@ import torch.optim as optim
 
 
 
-
 class IngrToInstrAttention(torch.nn.Module):
 
 
@@ -18,7 +17,6 @@ class IngrToInstrAttention(torch.nn.Module):
 	#		encoder_output_dim: output dimension of the encoder
 	#		attention_output_dim: dimension of the output of the attention mechanism
 	#
-	#		
 
 
 	def __init__(self, decoder_hidden_dim, encoder_output_dim, attention_output_dim):
@@ -50,7 +48,7 @@ class IngrToInstrAttention(torch.nn.Module):
 
 		# Save decoder hidden for concat later
 		ref = decoder_hidden
-		
+	
 		# Project hidden state down to size of encoder hidden state
 		decoder_hidden = self.projHidden2Encoder(decoder_hidden)
 
@@ -68,6 +66,7 @@ class IngrToInstrAttention(torch.nn.Module):
 		#Compute context vecotor for this timestep
 		context = torch.bmm(attn_weights, ingr_outputs)
 		context = torch.transpose(context,0,1)
+
 
 		# Concatenate context vector with decoder hidden state
 		concat = torch.cat((context,ref), dim = 2)
@@ -87,23 +86,23 @@ if(__name__ == '__main__'):
 	ingr_outputs = torch.tensor([	#ingr1
 									[
 
-										[1.0,1.0,1.0,1.0,1.0], #b1
+										#[1.0,1.0,1.0,1.0,1.0], #b1
 										[4.0,4.0,4.0,4.0,4.0]  #b2
 									],
 									#ingr2
 									[
-										[2.0,2.0,2.0,2.0,2.0], #b1
+										#[2.0,2.0,2.0,2.0,2.0], #b1
 										[5.0,5.0,5.0,5.0,5.0]  #b2
 									],
 									#ingr3
 									[
-										[3.0,3.0,3.0,3.0,3.0], #b1
+										#[3.0,3.0,3.0,3.0,3.0], #b1
 										[6.0,6.0,6.0,6.0,3.0]  #b2
 									]					
 								])
 
 	decoder_hidden = torch.tensor([[
-										[4.0,4.0,4.0,4.0],
+										#[4.0,4.0,4.0,4.0],
 										[5.0,5.0,5.0,5.0]
 									]])
 

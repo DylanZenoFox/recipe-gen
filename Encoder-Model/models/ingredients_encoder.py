@@ -52,7 +52,7 @@ class IngredientsEncoder(torch.nn.Module):
 	# Parameters:
 	#
 	# Input: 
-	# 		ingredients: List of ingredient string tensors of shape (num_ingredients, num_words)
+	# 		ingredients: List of ingredient string tensors of shape (num_batches,  num_words) of length num_ingredients
 	#
 	# Output: 
 	#		output:  Tensor of shape (num_ingredients, batch_size, hidden_size * num_directions) representing output for each timestep for each batch
@@ -60,9 +60,11 @@ class IngredientsEncoder(torch.nn.Module):
 
 	def forward(self, ingredients):
 
+		batch_size = ingredients[0].size(0)
+
 
 		# Initialize hidden
-		hidden = self.initHidden(1, self.outer_bidirectional)
+		hidden = self.initHidden(batch_size, self.outer_bidirectional)
 
 		# Collect inputs for each ingredients string
 		inputs = []
@@ -71,7 +73,7 @@ class IngredientsEncoder(torch.nn.Module):
 		# Iterate through each ingredient and pass it to the single ingredient encoder 
 		for ingr in ingredients:
 
-			ingr = torch.unsqueeze(ingr,0)
+			#ingr = torch.unsqueeze(ingr,0)
 
 			# Retrieve final hidden state representing encoding for ingredient i
 			single_ingr_output , h = self.single_ingr_encoder(ingr)
@@ -82,11 +84,9 @@ class IngredientsEncoder(torch.nn.Module):
 
 			single_ingr_outputs.append(single_ingr_output)
 
-
-
 		# Create tensor from list
 		inputs = torch.stack(inputs)
-		inputs = torch.unsqueeze(inputs,1)
+		#inputs = torch.unsqueeze(inputs,1)
 
 
 		# Pass these values to the outer GRU and obtain the outputs and hidden values
@@ -193,12 +193,18 @@ class SingleIngredientEncoder(torch.nn.Module):
 if(__name__ == '__main__'):
 
 	test = [ 
-				# Ingr 1
-				torch.tensor([1,2,3,4,5]),
-				# Ingr 2
-				torch.tensor([2,4,6,8]),
-				# Ingr 3
-				torch.tensor([4,3])
+				#Ingr1
+				torch.tensor([[1,2,3,4,5],
+							[1,2,3,4,5]]),
+
+				#Ingr2
+				torch.tensor([[5,4,3,2,1],
+							[5,4,3,2,1]]),
+
+				#Ingr3
+				torch.tensor([[1,1,1,1,1],
+							[1,1,1,1,1]])
+
 
 			]
 	

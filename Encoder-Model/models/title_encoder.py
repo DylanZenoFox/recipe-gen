@@ -49,6 +49,7 @@ class TitleEncoder(torch.nn.Module):
 		#Get batch size
 		batch_size = title.size(0)
 
+
 		#Initialize hidden state
 		hidden = self.initHidden(batch_size, self.bidirectional)
 
@@ -97,7 +98,11 @@ if(__name__ == '__main__'):
 	test = torch.tensor([
 						[
 							4,8,6,3,6
+						],
+						[
+							4,3,2,1,4
 						]
+
 						])
 
 	embeddings = nn.Embedding(10,5)

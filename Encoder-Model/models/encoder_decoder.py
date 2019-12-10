@@ -15,6 +15,10 @@ from lang import Lang
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 lang = Lang(path_to_vocab_files= 'vocab_files/')
 
+SOS_Token = 0
+EOS_Token = 1
+PAD_Token = 2
+
 class EncoderDecoder(torch.nn.Module):
 
 
@@ -79,9 +83,9 @@ class EncoderDecoder(torch.nn.Module):
 	# Parameters:
 	#	
 	# Input: 
-	#		title: tensor of shape (1, seq_len) representing the title of the recipe
-	#		ingredients: list of ingredient tensors of shape (num_ingredients, num_words)
-	#		target_instructions: list of instruction tensors of shape (num_instructions,num_words), None if evaluating
+	#		title: tensor of shape (batch_size, seq_len) representing the title of the recipe
+	#		ingredients: list of ingredient tensors of shape (batch_size, num_words) of length num_ingredients
+	#		target_instructions: list of instruction tensors of shape (batch_size,num_words) or length num_ingredients, None if evaluating
 	#		word_loss: criterion for the word level loss, None if evaluating
 	#		end_instr_los: criterion for end instructions loss for the binary classifier. None if evaluating
 	#
@@ -93,6 +97,8 @@ class EncoderDecoder(torch.nn.Module):
 
 	def forward(self, title, ingredients, word_criterion = None, end_instr_criterion = None, target_instructions = None):
 		
+		batch_size = title.size(0)
+
 		#Losses are 0 to start
 		word_loss = 0 
 		end_instr_loss = 0
@@ -103,15 +109,14 @@ class EncoderDecoder(torch.nn.Module):
 		title_outputs, encoded_title = self.title_encoder(title)
 		ingr_outputs, encoded_ingr, single_ingr_outputs = self.ingredients_encoder(ingredients)
 
+
 		# Concatenate to get first hidden layer of decoder
 		decoder_hidden = torch.cat([encoded_title,encoded_ingr], dim = 2)
 
 		# Create first hidden vector of the instruction decoder
-		decoder_input = torch.zeros(self.single_instr_hidden_dim, device = device)
-		decoder_input = torch.unsqueeze(decoder_input,0)
-		decoder_input = torch.unsqueeze(decoder_input,0)
+		decoder_input = torch.zeros((1,batch_size, self.single_instr_hidden_dim), device = device)
 
-		# Decide if teacher forcing will be used for this instruction
+		# Decide if teacher forcing will be used for this instruction batch
 		use_teacher_forcing = True if random.random() < self.instr_list_tf_ratio else False
 
 
@@ -160,28 +165,53 @@ class EncoderDecoder(torch.nn.Module):
 
 				instructions.append(decoded_instruction)
 
+				print(len(instructions))
+
 				#print("Decoded Instruction: " + str(lang.indices2string(decoded_instruction)))
 				#print("Actual Instruction: " + str(lang.indices2string(target_instructions[i].tolist())))
 
 				word_loss += loss
 
+				print(decoder_output.shape)
+				print(decoder_output[0].shape)
+
 				end_instructions_pred = self.end_instructions_classifier(decoder_output[0])
 
-				end = end_instructions_pred.topk(1)[1].item()
+				print(end_instructions_pred.topk(1)[1])
 
-				if(i == len(target_instructions) - 1):
+				#end = end_instructions_pred.topk(1)[1].item()
 
-					single_instr_cl_loss = end_instr_criterion(end_instructions_pred, torch.tensor([1], device = device))
+				print(len(target_instructions))
+
+				end_truth = []
+				for j in range(target_instructions[i].size(0)):
+
+					if(target_instructions[i][j][0] == PAD_Token):
+						end_truth.append(PAD_Token)
+					elif(i == len(target_instructions) - 1):
+						end_truth.append(1)
+					else:
+						end_truth.append(1) if (target_instructions[i+1][j][0] == PAD_Token) else end_truth.append(0)
+
+				end_truth = torch.tensor(end_truth, device = device)
+
+				print(end_truth)
+
+
+				#if(i == len(target_instructions) - 1):
+
+				single_instr_cl_loss = end_instr_criterion(end_instructions_pred, end_truth)
 
 					#print("Should End [1]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
 
-					end_instr_loss += single_instr_cl_loss
-				else:
-					single_instr_cl_loss = end_instr_criterion(end_instructions_pred, torch.tensor([0], device = device))
+				end_instr_loss += single_instr_cl_loss
+
+				#else:
+					#single_instr_cl_loss = end_instr_criterion(end_instructions_pred, end_truth)
 
 					#print("Should not end [0]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
 
-					end_instr_loss += single_instr_cl_loss
+					#end_instr_loss += single_instr_cl_loss
 
 				decoder_input = decoder_output.detach()
 

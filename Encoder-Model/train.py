@@ -12,6 +12,10 @@ import json
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+SOS_Token = 0
+EOS_Token = 1
+PAD_Token = 2
+
 class Solver():
 
 	def __init__(self, load_from_path = None, save_to_path = None, save_frequency = 100):
@@ -46,7 +50,7 @@ class Solver():
 		self.max_num_instructions = 15
 
 		self.single_instr_tf_ratio = 0.5
-		self.instr_list_tf_ratio = 0.5
+		self.instr_list_tf_ratio = 1
 
 		self.end_instr_hidden_dim = 128
 
@@ -54,18 +58,14 @@ class Solver():
 
 		self.learning_rate = 0.01
 
-		self.batch_size = 50
+		self.batch_size = 5
 
 		# MODELS
 
 		self.encoder_decoder = EncoderDecoder(vocab_size = self.vocab_size, word_embedding_dim = self.word_embedding_dim, title_hidden_dim = self.title_hidden_dim, ingr_list_hidden_dim = self.ingr_list_hidden_dim,
 			single_ingr_hidden_dim = self.single_ingr_hidden_dim, single_instr_hidden_dim = self.single_instr_hidden_dim, end_instr_hidden_dim = self.end_instr_hidden_dim, max_num_instr = self.max_num_instructions,
 			max_instr_length = self.max_instr_length, single_instr_tf_ratio = self.single_instr_tf_ratio, instr_list_tf_ratio = self.instr_list_tf_ratio, title_bidirectional = self.title_bidirectional,
-<<<<<<< HEAD
 			ingr_outer_bidirectional = self.ingredients_outer_bidirectional, ingr_inner_bidirectional = self.ingredients_inner_bidirectional, ingr_instr_attention = self.ingr_instr_attention).to(device)
-=======
-			ingr_outer_bidirectional = self.ingredients_inner_bidirectional, ingr_inner_bidirectional = self.ingredients_inner_bidirectional).to(device)
->>>>>>> ecd5a33066578220f7cf9dce2b872725deeb18eb
 
 		# OPTIMIZER
 
@@ -73,7 +73,7 @@ class Solver():
 
 		# LOSS FUNCTIONS
 
-		self.word_criterion = nn.NLLLoss()
+		self.word_criterion = nn.NLLLoss(ignore_index = PAD_Token)
 		self.end_instr_criterion = nn.NLLLoss()
 
 		# LOAD PARAMETERS IF POSSIBLE
@@ -178,6 +178,12 @@ class Solver():
 
 		self.optimizer.zero_grad()
 
+		title = batch[0]
+		ingredients = batch[1]
+		target_instructions = batch[2]
+
+		print("Target Instructions Length: " + str(len(target_instructions)))
+
 		instructions, word_loss, end_instr_loss = self.encoder_decoder(title, ingredients, self.word_criterion, self.end_instr_criterion, target_instructions)
 
 		print("Total Word Loss: " + str(word_loss))
@@ -198,7 +204,7 @@ class Solver():
 		return (total_loss.item() / len(target_instructions)) , instructions
 
 
-	def trainIters(self, print_every = 20, num_epochs = 1, num_train_files = 10):
+	def trainIters(self, print_every = 1, num_epochs = 1, num_train_files = 1):
 
 		iters = 0
 		total_loss = 0
@@ -221,11 +227,9 @@ class Solver():
 				for batch in batches:
 
 					# DYLAN!! This is where the code fails atm
-<<<<<<< HEAD
-					loss, decoded_instructions = self.train_example(title_input, ingredients_input, instructions_input)
-=======
-					loss, decoded_instructions = self.train_batch(title_input, ingredients_input, instructions_input)
->>>>>>> ecd5a33066578220f7cf9dce2b872725deeb18eb
+
+					#loss, decoded_instructions = self.train_example(title_input, ingredients_input, instructions_input)
+					loss, decoded_instructions = self.train_batch(batch)
 
 					total_loss += loss
 
@@ -234,13 +238,15 @@ class Solver():
 
 						print("ACTUAL INSTRUCTIONS:")
 
+						instructions = batch[2]
+
 						for i in range(len(instructions)):
-							print(str(i) + ": " + instructions[i])
+							print(str(i) + ": " + self.lang.indices2string(instructions[i][0].tolist()))
 
 						print("DECODED INSTRUCTIONS:")
 
 						for i in range(len(decoded_instructions)):
-							print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i]))
+							print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i][0]))
 
 						print(" ")
 
@@ -289,9 +295,12 @@ class Solver():
 					max_single_instr_len = len(instr)
 
 
-		title_batch = torch.zeros(self.batch_size, max_title_len)
-		ingr_batch_list = [torch.zeros(self.batch_size, max_single_ingr_len)] * max_ingr_len
-		instr_batch_list = [torch.zeros(self.batch_size, max_single_instr_len)] * max_instr_len
+		title_batch = torch.zeros(self.batch_size, max_title_len).fill_(PAD_Token).type(torch.LongTensor).to(device)
+		ingr_batch_list = [torch.zeros(self.batch_size, max_single_ingr_len).fill_(PAD_Token).type(torch.LongTensor).to(device)for x in range(max_ingr_len)]
+		instr_batch_list = [torch.zeros(self.batch_size, max_single_instr_len).fill_(PAD_Token).type(torch.LongTensor).to(device) for x in range(max_instr_len)]
+
+		#ingr_batch_list = [torch.zeros(self.batch_size, max_single_ingr_len).fill_(PAD_Token).type(torch.LongTensor).to(device)] * max_ingr_len
+		#instr_batch_list = [torch.zeros(self.batch_size, max_single_instr_len).fill_(PAD_Token).type(torch.LongTensor).to(device)] * max_instr_len
 
 		for i, (title, ingredients, instructions) in enumerate(unpadded_batch):
 			for j in range(len(title[0])):
@@ -304,16 +313,17 @@ class Solver():
 					instr_batch_list[j][i][k] = instructions[j][k]
 
 		# uncomment to see internal structure of each batch
-		# print()
-		# print('max_title_len', max_title_len, '\nmax_ingr_len', max_ingr_len, '\nmax_single_ingr_len', max_single_ingr_len,
-		# 	  '\nmax_instr_len', max_instr_len, '\nmax_single_instr_len', max_single_instr_len)
-		# print()
-		# print('title_batch\t\t', title_batch.shape)
-		# print('len(ingr_batch_list)\t', len(ingr_batch_list))
-		# print('ingr_batch_list[0]\t', ingr_batch_list[0].shape)
-		# print('len(instr_batch_list)\t', len(instr_batch_list))
-		# print('instr_batch_list[0]\t', instr_batch_list[0].shape)
-		# print('\n-------------')
+		print()
+		print('max_title_len', max_title_len, '\nmax_ingr_len', max_ingr_len, '\nmax_single_ingr_len', max_single_ingr_len,
+			  '\nmax_instr_len', max_instr_len, '\nmax_single_instr_len', max_single_instr_len)
+		print()
+		print('title_batch\t\t', title_batch.shape)
+		print(title_batch)
+		print('len(ingr_batch_list)\t', len(ingr_batch_list))
+		print('ingr_batch_list[0]\t', ingr_batch_list[0].shape)
+		print('len(instr_batch_list)\t', len(instr_batch_list))
+		print('instr_batch_list[0]\t', instr_batch_list[0].shape)
+		print('\n-------------')
 
 		return [title_batch, ingr_batch_list, instr_batch_list]
 
@@ -346,85 +356,8 @@ class Solver():
 			instructions_input = self.lang.get_instruction_indices(instructions)
 			unpadded_batch.append([title_input, ingredients_input, instructions_input])
 
-		return batches
-
-	def pad_batch(self, unpadded_batch):
-		max_title_len = 0
-		max_ingr_len = 0
-		max_single_ingr_len = 0
-		max_instr_len = 0
-		max_single_instr_len = 0
-		for title, ingredients, instructions in unpadded_batch:
-			if len(title[0]) > max_title_len:
-				max_title_len = len(title[0])
-			if len(ingredients) > max_ingr_len:
-				max_ingr_len = len(ingredients)
-			if len(instructions) > max_instr_len:
-				max_instr_len = len(instructions)
-			for ingr in ingredients:
-				if len(ingr) > max_single_ingr_len:
-					max_single_ingr_len = len(ingr)
-			for instr in instructions:
-				if len(instr) > max_single_instr_len:
-					max_single_instr_len = len(instr)
-
-
-		title_batch = torch.zeros(self.batch_size, max_title_len)
-		ingr_batch_list = [torch.zeros(self.batch_size, max_single_ingr_len)] * max_ingr_len
-		instr_batch_list = [torch.zeros(self.batch_size, max_single_instr_len)] * max_instr_len
-
-		for i, (title, ingredients, instructions) in enumerate(unpadded_batch):
-			for j in range(len(title[0])):
-				title_batch[i][j] = title[0][j]
-			for j in range(len(ingredients)):
-				for k in range(len(ingredients[j])):
-					ingr_batch_list[j][i][k] = ingredients[j][k]
-			for j in range(len(instructions)):
-				for k in range(len(instructions[j])):
-					instr_batch_list[j][i][k] = instructions[j][k]
-
-		# uncomment to see internal structure of each batch
-		# print()
-		# print('max_title_len', max_title_len, '\nmax_ingr_len', max_ingr_len, '\nmax_single_ingr_len', max_single_ingr_len,
-		# 	  '\nmax_instr_len', max_instr_len, '\nmax_single_instr_len', max_single_instr_len)
-		# print()
-		# print('title_batch\t\t', title_batch.shape)
-		# print('len(ingr_batch_list)\t', len(ingr_batch_list))
-		# print('ingr_batch_list[0]\t', ingr_batch_list[0].shape)
-		# print('len(instr_batch_list)\t', len(instr_batch_list))
-		# print('instr_batch_list[0]\t', instr_batch_list[0].shape)
-		# print('\n-------------')
-
-		return [title_batch, ingr_batch_list, instr_batch_list]
-
-
-
-	def batchify(self, recipe_list, total_batches):
-
-		# sort by instruction length, then ingredient lenth,
-		# then by the max length of the words in the instructions,
-		# and finally by the max length of the words in the ingredients
-		recipe_list.sort(key=lambda x: (len(x['instructions']), len(x['ingredients']),
-										max([len(i.split()) for i in x['instructions']]),
-										max([len(i.split()) for i in x['ingredients']])))
-
-		batches = []
-		unpadded_batch = []
-		for i, recipe in enumerate(recipe_list):
-			if i % self.batch_size == 0 and i>0:
-				# unpadded_batch is full, now pad and add to batches
-				padded_batch = self.pad_batch(unpadded_batch)
-				batches.append(padded_batch)
-				unpadded_batch = []
-				if 100*len(batches) % total_batches == 0:
-					print(len(batches), 'batches\t', round((len(batches)/total_batches)*100), '%')
-			title = recipe['title']
-			ingredients = recipe['ingredients']
-			instructions = recipe['instructions']
-			title_input = self.lang.get_title_indices(title)
-			ingredients_input = self.lang.get_ingredient_indices(ingredients)
-			instructions_input = self.lang.get_instruction_indices(instructions)
-			unpadded_batch.append([title_input, ingredients_input, instructions_input])
+			if(i == 10000):
+				break
 
 		return batches
 

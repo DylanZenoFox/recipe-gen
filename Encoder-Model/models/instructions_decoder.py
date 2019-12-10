@@ -1,4 +1,4 @@
-from models.attention_mechanisms import IngrToInstrAttention
+from .attention_mechanisms import IngrToInstrAttention
 
 import torch
 import torch.nn as nn
@@ -8,6 +8,7 @@ import random
 
 SOS_Token = 0
 EOS_Token = 1
+PAD_Token = 2
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -23,7 +24,7 @@ class InstructionsDecoder(torch.nn.Module):
 	#		single_instr_hidden_dim: dimension of the hidden state for the single instruction decoder GRU
 	#		word_embedding_dim: dimension of the word embeddings
 	#		instr_list_hidden_dim: dimension of the hidden layer for all the recipe instructions
-	#		ingredients_hidden_dim: dimension of the ingredients hidden layer, used for attention
+	#		ingredients_output_dim: dimension of the ingredients hidden layer, used for attention
 	# 		max_instr_length: max length of instructions
 	#		teacher_forcing_ratio: what proportion of innerGRU decoding sessions will be teacher forced
 
@@ -57,7 +58,7 @@ class InstructionsDecoder(torch.nn.Module):
 	#		input: tensor of shape (1, batch_size , instr_hidden_dim) the last hidden state of the previous inner GRU
 	#		hidden: tensor of shape (1, batch_size, rec_hidden_dim) representing the hidden state for the previous timestep of the outer GRU
 	#		word_loss: loss criterion for the word level
-	#		targets: tensor of shape (num_words) containing target indices for ground truth instructions.  None if evaluating.
+	#		targets: tensor of shape (batch_size, num_words) containing target indices for ground truth instructions.  None if evaluating.
 	#		ingr_outputs: tensor of shape (seq_len, batch_size, encoder_output_size) representing the outputs of the ingredient encoder. Used for attention
 	#
 	# Output:
@@ -68,24 +69,29 @@ class InstructionsDecoder(torch.nn.Module):
 
 	def forward(self, input, hidden, word_loss, targets = None, ingr_outputs = None):
 
+		if(targets is not None):
+			targets = torch.transpose(targets,0,1)
+
+		batch_size = hidden.size(1)
+
 		#Get the next state from the outer GRU using the previous hidden state and the input from the last timestep
 		single_instr, hidden = self.outerGRU(input, hidden)
 
 		# Using ingredient to instruction attention
 		if(ingr_outputs is not None):
 			single_instr = self.ingr2instr_attention(ingr_outputs, single_instr)
-
 		# If no attention, use a linear layer to convert the hidden state of the outer GRU to the first hidden state of the inner GRU
 		else:
 			single_instr = self.outer2inner(single_instr)
 
+
 		single_instr = F.relu(single_instr)
 
 		#Always create first input as SOS token
-		instr_input = torch.tensor([[SOS_Token]],device = device)
+		instr_input = torch.tensor([[SOS_Token] for x in range(batch_size)],device = device)
 
 		# Values to return
-		decoded_instruction = [SOS_Token]
+		decoded_instruction = [[SOS_Token] for x in range(batch_size)]
 		loss = 0
 
 
@@ -102,14 +108,19 @@ class InstructionsDecoder(torch.nn.Module):
 				topv, topi = instr_output.topk(1)
 
 				# Append this word value to the decoded instructions list
-				decoded_instruction.append(topi.item())
+				for j in range(len(decoded_instruction)):
+					decoded_instruction[j].append(topi[j].item())
 
 				# Set the input to the next stage to be this input value
 				instr_input = topi.detach()
 
+
+				# I guess will always run until max length
+
+
 				# If the EOS_Token is generated, end generation
-				if(instr_input.item() == EOS_Token):
-					break
+				#if(instr_input.item() == EOS_Token):
+				#	break
 
 
 		# If training, then we have ground truth values
@@ -119,7 +130,7 @@ class InstructionsDecoder(torch.nn.Module):
 			use_teacher_forcing = True if random.random() < self.teacher_forcing_ratio else False
 
 			# Unsqueeze to get into better format for passing into GRU
-			targets = torch.unsqueeze(targets,1)
+			#targets = torch.unsqueeze(targets,1)
 
 			# If using teacher forcing
 			if(use_teacher_forcing):
@@ -142,10 +153,12 @@ class InstructionsDecoder(torch.nn.Module):
 					topv, topi = instr_output.topk(1)
 
 					# Append this to the decoded instructions
-					decoded_instruction.append(topi.item())
+
+					for j in range(len(decoded_instruction)):
+						decoded_instruction[j].append(topi[j].item())
 
 					# Set the next input to be the target value at this timestep
-					instr_input = torch.unsqueeze(targets[i],0)
+					instr_input = torch.unsqueeze(targets[i],1)
 
 
 			else:
@@ -159,7 +172,9 @@ class InstructionsDecoder(torch.nn.Module):
 
 					# Get the top value and index of this output					
 					topv, topi = instr_output.topk(1)
-					decoded_instruction.append(topi.item())
+
+					for j in range(len(decoded_instruction)):
+						decoded_instruction[j].append(topi[j].item())
 
 					# Calculate loss for this word
 					in_loss = word_loss(instr_output, targets[i])
@@ -172,8 +187,8 @@ class InstructionsDecoder(torch.nn.Module):
 					instr_input = topi.detach()
 
 					#If end of sentence is found, stop generating
-					if(instr_input.item() == EOS_Token):
-						break
+					#if(instr_input.item() == EOS_Token):
+					#	break
 
 
 		#end_instr = self.end_instructions_classifier(instr_hidden)
@@ -300,21 +315,44 @@ class EndInstructionsClassifier(torch.nn.Module):
 
 if(__name__ == '__main__'):
 
-	embeddings = nn.Embedding(10,3)
-	decoder = InstructionsDecoder( shared_embeddings= embeddings, single_instr_hidden_dim = 5, word_embedding_dim = 3, instr_list_hidden_dim  = 10, 
-		vocab_size = 10, ingredients_hidden_dim = 6)
-	crit = nn.NLLLoss()
+
+	classifier = EndInstructionsClassifier(10,5)
 
 	test = torch.tensor([
-							[[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,0.0]]
+							[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,0.0],
+							[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,0.0],
+							[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,0.0],
 						])
 
-	output, hidden, instructions, loss = decoder( input= torch.tensor([[[3.0,4.0,5.0,6.0,7.0]]]),  hidden = test, word_loss = crit, targets = torch.tensor([0,3,5,5,3,9,1]))
+	print(classifier(test))
 
-	print(output)
-	print(hidden)
-	print(loss)
-	print(instructions)
+	# embeddings = nn.Embedding(10,3)
+	# decoder = InstructionsDecoder( shared_embeddings= embeddings, word_embedding_dim = 3, single_instr_hidden_dim = 5, instr_list_hidden_dim  = 10, 
+	# 	vocab_size = 10, ingredients_output_dim = 10, teacher_forcing_ratio = 0.0)
+	# crit = nn.NLLLoss(ignore_index = 3)
+
+	# test = torch.tensor([
+	# 						[[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,0.0],
+	# 						[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,0.0]]
+	# 					])
+
+	# input = torch.tensor([
+	# 						[[3.0,4.0,5.0,6.0,7.0],
+	# 						[3.0,4.0,5.0,6.0,7.0]]
+	# 					])
+
+	# targets = torch.tensor([
+	# 							[0,8,8,8,8,8,1,3,3,3],
+	# 							[0,8,8,8,8,8,5,5,1,3]
+	# 						])
+
+	# output, hidden, instructions, loss = decoder( input= input,  hidden = test, word_loss = crit, targets = None)
+
+	# print(output)
+	# print(hidden)
+	# print(loss)
+	# print(instructions)
+
 
 
 
