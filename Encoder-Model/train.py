@@ -132,6 +132,7 @@ class Solver():
 		print("---------------------Miscellaneous------------------------")
 		print("")
 		print("Hidden Dimension of EoI Classifier: " + str(self.end_instr_hidden_dim))
+		print("Number of GPUs: " + str(torch.cuda.device_count()))
 		print("")
 		print("==========================================================")
 		print("")
