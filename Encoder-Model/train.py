@@ -186,8 +186,8 @@ class Solver():
 		print(title.shape)
 		print(ingredients[0].shape)
 		print(len(ingredients))
-		print(instructions[0].shape)
-		print(len(instructions))
+		print(target_instructions[0].shape)
+		print(len(target_instructions))
 
 		#print("Target Instructions Length: " + str(len(target_instructions)))
 
