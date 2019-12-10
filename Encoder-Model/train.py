@@ -58,7 +58,7 @@ class Solver():
 
 		self.learning_rate = 0.01
 
-		self.batch_size = 10
+		self.batch_size = 40
 
 		# MODELS
 
