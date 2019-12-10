@@ -335,6 +335,8 @@ class Solver():
 		# print('instr_batch_list[0]\t', instr_batch_list[0].shape)
 		# print('\n-------------')
 
+		print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
+
 		return [title_batch, ingr_batch_list, instr_batch_list]
 
 
