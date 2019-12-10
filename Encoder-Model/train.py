@@ -58,7 +58,7 @@ class Solver():
 
 		self.learning_rate = 0.01
 
-		self.batch_size = 30
+		self.batch_size = 10
 
 		# MODELS
 
@@ -66,6 +66,8 @@ class Solver():
 			single_ingr_hidden_dim = self.single_ingr_hidden_dim, single_instr_hidden_dim = self.single_instr_hidden_dim, end_instr_hidden_dim = self.end_instr_hidden_dim, max_num_instr = self.max_num_instructions,
 			max_instr_length = self.max_instr_length, single_instr_tf_ratio = self.single_instr_tf_ratio, instr_list_tf_ratio = self.instr_list_tf_ratio, title_bidirectional = self.title_bidirectional,
 			ingr_outer_bidirectional = self.ingredients_outer_bidirectional, ingr_inner_bidirectional = self.ingredients_inner_bidirectional, ingr_instr_attention = self.ingr_instr_attention).to(device)
+
+		self.encoder_decoder = nn.DataParallel(self.encoder_decoder)
 
 		# OPTIMIZER
 
@@ -182,7 +184,7 @@ class Solver():
 		ingredients = batch[1]
 		target_instructions = batch[2]
 
-		print("Target Instructions Length: " + str(len(target_instructions)))
+		#print("Target Instructions Length: " + str(len(target_instructions)))
 
 		instructions, word_loss, end_instr_loss = self.encoder_decoder(title, ingredients, self.word_criterion, self.end_instr_criterion, target_instructions)
 
@@ -201,10 +203,10 @@ class Solver():
 
 		print("Updated Gradients")
 
-		return (total_loss.item() / len(target_instructions)) , instructions
+		return (total_loss.detach().item() / len(target_instructions)) , instructions
 
 
-	def trainIters(self, print_every = 1, num_epochs = 1, num_train_files = 1):
+	def trainIters(self, print_every = 20, num_epochs = 1, num_train_files = 1):
 
 		iters = 0
 		total_loss = 0
@@ -317,17 +319,16 @@ class Solver():
 					instr_batch_list[j][i][k] = instructions[j][k]
 
 		# uncomment to see internal structure of each batch
-		print()
-		print('max_title_len', max_title_len, '\nmax_ingr_len', max_ingr_len, '\nmax_single_ingr_len', max_single_ingr_len,
-			  '\nmax_instr_len', max_instr_len, '\nmax_single_instr_len', max_single_instr_len)
-		print()
-		print('title_batch\t\t', title_batch.shape)
-		print(title_batch)
-		print('len(ingr_batch_list)\t', len(ingr_batch_list))
-		print('ingr_batch_list[0]\t', ingr_batch_list[0].shape)
-		print('len(instr_batch_list)\t', len(instr_batch_list))
-		print('instr_batch_list[0]\t', instr_batch_list[0].shape)
-		print('\n-------------')
+		# print()
+		# print('max_title_len', max_title_len, '\nmax_ingr_len', max_ingr_len, '\nmax_single_ingr_len', max_single_ingr_len,
+		# 	  '\nmax_instr_len', max_instr_len, '\nmax_single_instr_len', max_single_instr_len)
+		# print()
+		# print('title_batch\t\t', title_batch.shape)
+		# print('len(ingr_batch_list)\t', len(ingr_batch_list))
+		# print('ingr_batch_list[0]\t', ingr_batch_list[0].shape)
+		# print('len(instr_batch_list)\t', len(instr_batch_list))
+		# print('instr_batch_list[0]\t', instr_batch_list[0].shape)
+		# print('\n-------------')
 
 		return [title_batch, ingr_batch_list, instr_batch_list]
 
@@ -350,7 +351,7 @@ class Solver():
 				padded_batch = self.pad_batch(unpadded_batch)
 				batches.append(padded_batch)
 				unpadded_batch = []
-				if 100*len(batches) % total_batches == 0:
+				if 10*len(batches) % total_batches == 0:
 					print(len(batches), 'batches\t', round((len(batches)/total_batches)*100), '%')
 			title = recipe['title']
 			ingredients = recipe['ingredients']
@@ -360,15 +361,15 @@ class Solver():
 			instructions_input = self.lang.get_instruction_indices(instructions)
 			unpadded_batch.append([title_input, ingredients_input, instructions_input])
 
-			#if(i == 10000):
-			#	break
+			if(i == 10000):
+				break
 
 		return batches
 
 
 if(__name__ == '__main__'):
 
-	test = Solver(load_from_path = None, save_to_path = './model_params/updated_train_checkpoint2', save_frequency = 1000)
+	test = Solver(load_from_path = None, save_to_path = './model_params/updated_train_checkpoint2', save_frequency = 500)
 
 
 	#loss_per_instr = test.train_example(test_title, test_ingredients, test_targets)
