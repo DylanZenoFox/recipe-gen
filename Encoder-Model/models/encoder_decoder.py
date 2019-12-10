@@ -177,7 +177,7 @@ class EncoderDecoder(torch.nn.Module):
 
 				end_instructions_pred = self.end_instructions_classifier(decoder_output[0])
 
-				print(end_instructions_pred.topk(1)[1])
+				#print(end_instructions_pred.topk(1)[1])
 
 				#end = end_instructions_pred.topk(1)[1].item()
 
