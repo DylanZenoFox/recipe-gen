@@ -67,6 +67,8 @@ class Solver():
 			max_instr_length = self.max_instr_length, single_instr_tf_ratio = self.single_instr_tf_ratio, instr_list_tf_ratio = self.instr_list_tf_ratio, title_bidirectional = self.title_bidirectional,
 			ingr_outer_bidirectional = self.ingredients_outer_bidirectional, ingr_inner_bidirectional = self.ingredients_inner_bidirectional, ingr_instr_attention = self.ingr_instr_attention).to(device)
 
+		print("Model Size: " + str(sys.getsizeof(self.encoder_decoder)))
+
 		# OPTIMIZER
 
 		self.optimizer = optim.Adam(self.encoder_decoder.parameters())
