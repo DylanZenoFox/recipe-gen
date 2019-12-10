@@ -187,25 +187,25 @@ class Solver():
 
 		instructions, word_loss, end_instr_loss = self.encoder_decoder(title, ingredients, self.word_criterion, self.end_instr_criterion, target_instructions)
 
-		print("Total Word Loss: " + str(word_loss))
-		print("Total End_Instr Loss: " + str(end_instr_loss))
+		#print("Total Word Loss: " + str(word_loss))
+		#print("Total End_Instr Loss: " + str(end_instr_loss))
 
 		total_loss = word_loss + end_instr_loss
 
-		print("Forward Pass Complete")
+		#print("Forward Pass Complete")
 
 		total_loss.backward()
 
-		print("Computed Gradients")
+		#print("Computed Gradients")
 
 		self.optimizer.step()
 
-		print("Updated Gradients")
+		#print("Updated Gradients")
 
 		return (total_loss.detach().item() / len(target_instructions)) , instructions
 
 
-	def trainIters(self, print_every = 20, num_epochs = 1, num_train_files = 1):
+	def trainIters(self, print_every = 50, num_epochs = 5, num_train_files = 10):
 
 		iters = 0
 		total_loss = 0
@@ -360,7 +360,7 @@ class Solver():
 			instructions_input = self.lang.get_instruction_indices(instructions)
 			unpadded_batch.append([title_input, ingredients_input, instructions_input])
 
-			if(i == 10000):
+			if(i == 1000):
 				break
 
 		return batches

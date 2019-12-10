@@ -45,7 +45,7 @@ class InstructionsDecoder(torch.nn.Module):
 
 		self.ingr2instr_attention = IngrToInstrAttention(decoder_hidden_dim = instr_list_hidden_dim, encoder_output_dim = ingredients_output_dim, attention_output_dim = single_instr_hidden_dim)
 
-		self.innerGRU = SingleInstructionDecoder(shared_embeddings = shared_embeddings, embedding_dim= word_embedding_dim, hidden_dim = single_instr_hidden_dim, vocab_size = vocab_size)
+		self.innerGRU = SingleInstructionDecoder(shared_embeddings = shared_embeddings, embedding_dim= word_embedding_dim, hidden_dim = single_instr_hidden_dim, vocab_size = vocab_size, ingredients_output_dim = ingredients_output_dim)
 
 		#self.end_instructions_classifier = EndInstructionsClassifier(instr_embed_dim = single_instr_hidden_dim, hidden_dim= end_instr_hidden_dim)
 
@@ -85,6 +85,9 @@ class InstructionsDecoder(torch.nn.Module):
 			single_instr = self.outer2inner(single_instr)
 
 
+		# Introduce skip connection to allow new instruction to gain information about old instruction
+		single_instr = single_instr.add(input)
+
 		single_instr = F.relu(single_instr)
 
 		#Always create first input as SOS token
@@ -102,7 +105,7 @@ class InstructionsDecoder(torch.nn.Module):
 			# Assume first token is always SOS_Token
 			for i in range(1, self.max_instr_length):
 
-				instr_output, instr_hidden = self.innerGRU(instr_input, single_instr)
+				instr_output, instr_hidden = self.innerGRU(instr_input, single_instr, ingr_outputs)
 
 				# Get max index and value of the output
 				topv, topi = instr_output.topk(1)
@@ -140,7 +143,7 @@ class InstructionsDecoder(torch.nn.Module):
 				# Iterate until the end of the target 
 				for i in range(1, targets.size(0)):
 
-					instr_output, instr_hidden = self.innerGRU(instr_input, single_instr)
+					instr_output, instr_hidden = self.innerGRU(instr_input, single_instr, ingr_outputs)
 
 					# Calculate loss on this word
 					in_loss = word_loss(instr_output, targets[i])
@@ -168,7 +171,7 @@ class InstructionsDecoder(torch.nn.Module):
 				# Iterate until end of target instruction
 				for i in range(1, targets.size(0)):
 
-					instr_output, instr_hidden = self.innerGRU(instr_input, single_instr)
+					instr_output, instr_hidden = self.innerGRU(instr_input, single_instr, ingr_outputs)
 
 					# Get the top value and index of this output					
 					topv, topi = instr_output.topk(1)
@@ -221,7 +224,7 @@ class SingleInstructionDecoder(torch.nn.Module):
 	#		embedding_dim: dimension of the word embedding
 	#		hidden_dim: dimension of the hidden state 
 
-	def __init__(self, shared_embeddings, embedding_dim, hidden_dim, vocab_size):
+	def __init__(self, shared_embeddings, embedding_dim, hidden_dim, vocab_size, ingredients_output_dim):
 		super(SingleInstructionDecoder,self).__init__()
 
 		self.hidden_dim = hidden_dim
@@ -232,6 +235,8 @@ class SingleInstructionDecoder(torch.nn.Module):
 		self.gru = nn.GRU(embedding_dim,hidden_dim)
 		self.out = nn.Linear(hidden_dim,vocab_size)
 		self.softmax = nn.LogSoftmax(dim=1)
+
+		self.inner_attention = IngrToInstrAttention(decoder_hidden_dim = hidden_dim, encoder_output_dim = ingredients_output_dim, attention_output_dim = hidden_dim)
 
 
 	# Forward pass of the Single Instruction Decoder
@@ -246,7 +251,7 @@ class SingleInstructionDecoder(torch.nn.Module):
 	#		output: tensor of shape (batch_size, vocab_size) representing softmax distribution over words in vocabulary
 	#		hidden: tensor of shape (1, batch_size, hidden_dim) representing the hidden state of the current timestep
 
-	def forward(self,input,hidden):
+	def forward(self,input,hidden, ingr_outputs = None):
 
 		batch_size = hidden.size(1)
 
@@ -255,6 +260,10 @@ class SingleInstructionDecoder(torch.nn.Module):
 
 		output = F.relu(output)
 		output, hidden =  self.gru(output,hidden)
+
+		if(ingr_outputs is not None):
+			output = self.inner_attention(ingr_outputs, output)
+
 		output = self.softmax(self.out(output[0]))
 		return output, hidden
 
