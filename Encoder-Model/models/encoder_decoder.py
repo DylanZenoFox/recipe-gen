@@ -165,15 +165,15 @@ class EncoderDecoder(torch.nn.Module):
 
 				instructions.append(decoded_instruction)
 
-				print(len(instructions))
+				#print(len(instructions))
 
 				#print("Decoded Instruction: " + str(lang.indices2string(decoded_instruction)))
 				#print("Actual Instruction: " + str(lang.indices2string(target_instructions[i].tolist())))
 
 				word_loss += loss
 
-				print(decoder_output.shape)
-				print(decoder_output[0].shape)
+				#print(decoder_output.shape)
+				#print(decoder_output[0].shape)
 
 				end_instructions_pred = self.end_instructions_classifier(decoder_output[0])
 
@@ -181,7 +181,7 @@ class EncoderDecoder(torch.nn.Module):
 
 				#end = end_instructions_pred.topk(1)[1].item()
 
-				print(len(target_instructions))
+				#print(len(target_instructions))
 
 				end_truth = []
 				for j in range(target_instructions[i].size(0)):
@@ -195,7 +195,7 @@ class EncoderDecoder(torch.nn.Module):
 
 				end_truth = torch.tensor(end_truth, device = device)
 
-				print(end_truth)
+				#print(end_truth)
 
 
 				#if(i == len(target_instructions) - 1):
@@ -231,34 +231,31 @@ class EncoderDecoder(torch.nn.Module):
 
 				instructions.append(decoded_instruction)
 
-				#print("Decoded Instruction: " + str(lang.indices2string(decoded_instruction)))
-				#print("Actual Instruction: " + str(lang.indices2string(target_instructions[i].tolist())))
-
 				word_loss += loss
 
 				end_instructions_pred = self.end_instructions_classifier(decoder_output[0])
 
-				end = end_instructions_pred.topk(1)[1].item()
-
-				#print("End: " + str(end))
-
-				if(i == len(target_instructions) - 1):
-
-					single_instr_cl_loss = end_instr_criterion(end_instructions_pred, torch.tensor([1], device = device))
-
-					#print("Should End [1]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
-
-					end_instr_loss += single_instr_cl_loss
-				else:
-					single_instr_cl_loss = end_instr_criterion(end_instructions_pred, torch.tensor([0], device = device))
-
-					#print("Should not end [0]. Values: " + str(end_instructions_pred) + " Loss:" + str(single_instr_cl_loss.item()))
-
-					end_instr_loss += single_instr_cl_loss
+				print(end_instructions_pred.topk(1)[1])
 
 
-				if(end == 1):
-					break
+
+				end_truth = []
+				for j in range(target_instructions[i].size(0)):
+
+					if(target_instructions[i][j][0] == PAD_Token):
+						end_truth.append(PAD_Token)
+					elif(i == len(target_instructions) - 1):
+						end_truth.append(1)
+					else:
+						end_truth.append(1) if (target_instructions[i+1][j][0] == PAD_Token) else end_truth.append(0)
+
+
+				end_truth = torch.tensor(end_truth, device = device)
+
+				single_instr_cl_loss = end_instr_criterion(end_instructions_pred, end_truth)
+
+				end_instr_loss += single_instr_cl_loss
+
 
 				decoder_input = decoder_output.detach()
 

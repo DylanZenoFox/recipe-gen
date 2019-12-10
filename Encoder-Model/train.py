@@ -50,7 +50,7 @@ class Solver():
 		self.max_num_instructions = 15
 
 		self.single_instr_tf_ratio = 0.5
-		self.instr_list_tf_ratio = 1
+		self.instr_list_tf_ratio = 0.5
 
 		self.end_instr_hidden_dim = 128
 
@@ -58,7 +58,7 @@ class Solver():
 
 		self.learning_rate = 0.01
 
-		self.batch_size = 5
+		self.batch_size = 30
 
 		# MODELS
 
@@ -74,7 +74,7 @@ class Solver():
 		# LOSS FUNCTIONS
 
 		self.word_criterion = nn.NLLLoss(ignore_index = PAD_Token)
-		self.end_instr_criterion = nn.NLLLoss()
+		self.end_instr_criterion = nn.NLLLoss(ignore_index = PAD_Token)
 
 		# LOAD PARAMETERS IF POSSIBLE
 
@@ -236,6 +236,10 @@ class Solver():
 					iters += 1
 					if(iters % print_every == 0):
 
+						print("ITER: " + str(iters*self.batch_size))
+
+						print("RECIPE: " + self.lang.indices2string(batch[0][0].tolist()))
+
 						print("ACTUAL INSTRUCTIONS:")
 
 						instructions = batch[2]
@@ -356,8 +360,8 @@ class Solver():
 			instructions_input = self.lang.get_instruction_indices(instructions)
 			unpadded_batch.append([title_input, ingredients_input, instructions_input])
 
-			if(i == 10000):
-				break
+			#if(i == 10000):
+			#	break
 
 		return batches
 
