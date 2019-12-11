@@ -218,7 +218,7 @@ class Solver():
 		#print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
 
 
-		print("Ending Batch Train")
+		#print("Ending Batch Train")
 
 		return (total_loss.detach().item() / len(target_instructions)) , instructions
 
