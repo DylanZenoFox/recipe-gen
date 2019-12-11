@@ -59,7 +59,7 @@ class Solver():
 
 		self.learning_rate = 0.01
 
-		self.batch_size = 12
+		self.batch_size = 8
 
 		# MODELS
 
@@ -190,11 +190,11 @@ class Solver():
 		ingredients = batch[1]
 		target_instructions = batch[2]
 
-		print(title.shape)
-		print(ingredients[0].shape)
-		print(len(ingredients))
-		print(target_instructions[0].shape)
-		print(len(target_instructions))
+		#print(title.shape)
+		#print(ingredients[0].shape)
+		#print(len(ingredients))
+		#print(target_instructions[0].shape)
+		#print(len(target_instructions))
 
 		#print("Target Instructions Length: " + str(len(target_instructions)))
 
