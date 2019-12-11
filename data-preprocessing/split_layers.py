@@ -4,7 +4,31 @@ import os
 import sys
 import json
 import ijson
+from spacy.lang.en import English
 import random
+
+tokenizer = English().Defaults.create_tokenizer(English())
+
+max_title_length = 15
+max_ingr_length = 15
+max_num_ingr = 20
+max_instr_length = 25
+max_num_instr = 20
+
+
+def shorten_string(string, max_length):
+
+	tokens = tokenizer(string)
+	newStr =  "".join(str(tokens[:max_length]))
+
+	return newStr
+
+	#print("Shorten:")
+	#print(string)
+	#print(newStr)
+
+
+
 
 f = open('../data/layer1.json')
 
@@ -38,11 +62,19 @@ for prefix, event,value in parser:
 		newItem['ingredients'] = []
 		newItem['instructions'] = []
 	elif(prefix.startswith('item.ingredients') and event == "string"):
-		newItem['ingredients'].append(value)
+
+		if(len(newItem['ingredients']) < max_num_ingr):
+
+			newItem['ingredients'].append(shorten_string(value,max_ingr_length))
+
+
 	elif(prefix == 'item.title' and event == 'string'):
-		newItem['title'] = value
+		newItem['title'] = shorten_string(value, max_title_length)
 	elif(prefix.startswith('item.instructions') and event == "string"):
-		newItem['instructions'].append(value)
+
+		if(len(newItem['instructions']) < max_num_instr):
+			newItem['instructions'].append(shorten_string(value,max_instr_length))
+
 	elif(prefix == "item.id" and event=="string"):
 		newItem['id'] = value
 

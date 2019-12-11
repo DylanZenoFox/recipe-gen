@@ -59,7 +59,7 @@ class Solver():
 
 		self.learning_rate = 0.01
 
-		self.batch_size = 40
+		self.batch_size = 8
 
 		# MODELS
 
@@ -68,7 +68,7 @@ class Solver():
 			max_instr_length = self.max_instr_length, single_instr_tf_ratio = self.single_instr_tf_ratio, instr_list_tf_ratio = self.instr_list_tf_ratio, title_bidirectional = self.title_bidirectional,
 			ingr_outer_bidirectional = self.ingredients_outer_bidirectional, ingr_inner_bidirectional = self.ingredients_inner_bidirectional, ingr_instr_attention = self.ingr_instr_attention).to(device)
 
-		print("Model Size: " + str(sys.getsizeof(self.encoder_decoder)))
+		#print("Model Size: " + str(sys.getsizeof(self.encoder_decoder)))
 
 		# OPTIMIZER
 
@@ -240,8 +240,14 @@ class Solver():
 				print('total batches =', total_batches)
 				batches = self.batchify(recipe_data, total_batches)
 				print('randomizing batch order ...')
+				#print("Memory Used - Before shuffle: " + str(torch.cuda.memory_allocated(device=device)))
+
 				shuffle(batches)
 				print('ready to start training!')
+
+				#print("Memory Used - Starting to Train: " + str(torch.cuda.memory_allocated(device=device)))
+
+
 
 				for batch in batches:
 

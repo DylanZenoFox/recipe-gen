@@ -10,7 +10,7 @@ class Vocab:
         self.path_to_vocab_files = path_to_vocab_files
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {0: '<S>', 1: '</S>', 2: '<PAD>', 3: '<I>', 4:'</I>', 5:'<UNK>'}
+        self.index2word = {0: '<S>', 1: '</S>', 2: ' ', 3: '<I>', 4:'</I>', 5:'<UNK>'}
         self.n_words = 6  # Count SOS and EOS
         self.lang = English()
         self.tokenizer = self.lang.Defaults.create_tokenizer(self.lang)
