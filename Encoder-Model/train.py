@@ -59,7 +59,7 @@ class Solver():
 
 		self.learning_rate = 0.01
 
-		self.batch_size = 16
+		self.batch_size = 12
 
 		# MODELS
 
@@ -363,8 +363,9 @@ class Solver():
 		# sort by instruction length, then ingredient lenth,
 		# then by the max length of the words in the instructions,
 		# and finally by the max length of the words in the ingredients
-		recipe_list.sort(key=lambda x: (len(x['instructions']), len(x['ingredients']),
+		recipe_list.sort(key=lambda x: (len(x['instructions']), 
 										max([len(i.split()) for i in x['instructions']]),
+										len(x['ingredients']),
 										max([len(i.split()) for i in x['ingredients']])))
 
 		batches = []
