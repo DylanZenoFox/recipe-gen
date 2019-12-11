@@ -48,7 +48,7 @@ class Solver():
 		self.single_instr_hidden_dim = 256
 		self.max_instr_length = 25
 
-		self.max_num_instructions = 15
+		self.max_num_instructions = 20
 
 		self.single_instr_tf_ratio = 0.5
 		self.instr_list_tf_ratio = 0.5
@@ -59,7 +59,7 @@ class Solver():
 
 		self.learning_rate = 0.01
 
-		self.batch_size = 8
+		self.batch_size = 16
 
 		# MODELS
 
@@ -223,7 +223,7 @@ class Solver():
 		return (total_loss.detach().item() / len(target_instructions)) , instructions
 
 
-	def trainIters(self, print_every = 50, num_epochs = 5, num_train_files = 10):
+	def trainIters(self, print_every = 25, num_epochs = 5, num_train_files = 10):
 
 		iters = 0
 		total_loss = 0
@@ -395,7 +395,7 @@ class Solver():
 
 if(__name__ == '__main__'):
 
-	test = Solver(load_from_path = None, save_to_path = './model_params/updated_train_checkpoint2', save_frequency = 500)
+	test = Solver(load_from_path = None, save_to_path = './model_params/updated_train_checkpoint2', save_frequency = 100)
 
 
 	#loss_per_instr = test.train_example(test_title, test_ingredients, test_targets)
