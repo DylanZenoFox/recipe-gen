@@ -180,8 +180,8 @@ class Solver():
 
 	def train_batch(self, batch):
 
-		print("Starting Batch Train")
-		print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
+		#print("Starting Batch Train")
+		#print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
 
 
 		self.optimizer.zero_grad()
@@ -215,7 +215,7 @@ class Solver():
 
 		#print("Updated Gradients")
 
-		print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
+		#print("Memory Used: " + str(torch.cuda.memory_allocated(device=device)))
 
 
 		print("Ending Batch Train")
@@ -387,8 +387,8 @@ class Solver():
 			instructions_input = self.lang.get_instruction_indices(instructions)
 			unpadded_batch.append([title_input, ingredients_input, instructions_input])
 
-			if(i == 1000):
-				break
+			#if(i == 1000):
+			#	break
 
 		return batches
 

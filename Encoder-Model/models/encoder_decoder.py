@@ -260,7 +260,7 @@ class EncoderDecoder(torch.nn.Module):
 
 				decoder_input = decoder_output.detach()
 
-		print("Memory Used - End of Forwards: " + str(torch.cuda.memory_allocated(device=device)))
+		#print("Memory Used - End of Forwards: " + str(torch.cuda.memory_allocated(device=device)))
 
 
 
