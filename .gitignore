@@ -1,2 +1,4 @@
 data/layer1.json
 Encoder-Model/model_params/*
+google-cloud-sdk/*
+*.tar.gz

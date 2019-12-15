@@ -138,9 +138,7 @@ class EncoderDecoder(torch.nn.Module):
 
 				end_instructions_pred = self.end_instructions_classifier(decoder_output[0])
 
-				end = end_instructions_pred.topk(1)[1]
-
-
+				end = end_instructions_pred.topk(1)[1].item()
 
 				if(end == 1):
 					break

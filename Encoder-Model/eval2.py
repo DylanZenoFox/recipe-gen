@@ -169,16 +169,16 @@ class Solver():
 		return instructions
 
 
-	def evalIters(self, print_every = 1, num_epochs = 5, num_train_files = 10):
+	def evalIters(self, print_every = 1, num_epochs = 5, num_test_files = 5):
 
 		ref_list = []
 		hyp_list = []
 		iters = 0
 
 
-		for i in range(num_train_files):
+		for i in range(num_test_files):
 
-			with open('../data/train' + str(i) + ".json") as f:
+			with open('../data/test' + str(i) + ".json") as f:
 
 				recipe_data = json.load(f)
 
@@ -218,30 +218,43 @@ class Solver():
 					print("DECODED INSTRUCTIONS:")
 
 					for i in range(len(decoded_instructions)):
-						print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i][0]))
+
+						if(1 in decoded_instructions[i][0]):
+
+							print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i][0][:decoded_instructions[i][0].index(EOS_Token) + 1]))
+						else:
+							print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i][0]))
 
 					print(" ")
 
-				# 	ref = []
+					ref = []
 
-				# 	for instr in instructions:
-				# 		for wrd in instr[0].tolist():
-				# 			ref.append(wrd)
+					for instr in instructions:
+						for wrd in instr[0].tolist():
+							ref.append(wrd)
 
-				# 	hyp = []
-				# 	for d_instr in decoded_instructions:
-				# 		for wrd in d_instr[0]:
-				# 			hyp.append(wrd)
+					hyp = []
+					for d_instr in decoded_instructions:
+						for wrd in d_instr[0]:
+							hyp.append(wrd)
 
-				# 	print([ref])
-				# 	print(hyp)
+							if(wrd == EOS_Token):
+								break
 
-				# 	ref_list.append([ref])
-				# 	hyp_list.append(hyp)
+
+					#print([ref])
+					#print(hyp)
+
+					ref_list.append([ref])
+					hyp_list.append(hyp)
 
 				# 	print("==============================================================================")
 
-				# print(" CORPUS BLEU SCORE: " + str(nltk.translate.bleu_score.corpus_bleu(ref_list,hyp_list)))
+					if(iters == 100):
+						break
+
+				smooth = nltk.translate.bleu_score.SmoothingFunction()
+				print(" CORPUS BLEU SCORE: " + str(nltk.translate.bleu_score.corpus_bleu(ref_list,hyp_list, smoothing_function=smooth.method1)))
 
 				print("==============================================================================")
 
@@ -342,15 +355,15 @@ class Solver():
 			instructions_input = self.lang.get_instruction_indices(instructions)
 			unpadded_batch.append([title_input, ingredients_input, instructions_input])
 
-			if(i == 1000):
-				break
+			#if(i == 1000):
+			#	break
 
 		return batches
 
 
 if(__name__ == '__main__'):
 
-	test = Solver(load_from_path = './model_params/updated_train_checkpoint2')
+	test = Solver(load_from_path = './model_params/test2')
 
 
 	#loss_per_instr = test.train_example(test_title, test_ingredients, test_targets)

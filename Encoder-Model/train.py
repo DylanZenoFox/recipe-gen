@@ -300,9 +300,15 @@ class Solver():
 
 	def load_model(self,model_params_path):
 
-		checkpoint = torch.load(model_params_path)
+		if torch.cuda.is_available():
+			map_location=lambda storage, loc: storage.cuda()
+		else:
+			map_location='cpu'
+
+		checkpoint = torch.load(model_params_path, map_location = map_location)
 		self.encoder_decoder.load_state_dict(checkpoint['model_state_dict'])
 
+		
 	def pad_batch(self, unpadded_batch):
 		max_title_len = 0
 		max_ingr_len = 0
@@ -396,7 +402,7 @@ class Solver():
 
 if(__name__ == '__main__'):
 
-	test = Solver(load_from_path = None, save_to_path = './model_params/updated_train_checkpoint2', save_frequency = 100)
+	test = Solver(load_from_path = './model_params/updated_train_checkpoint2', save_to_path = './model_params/updated_train_checkpoint2', save_frequency = 100)
 
 
 	#loss_per_instr = test.train_example(test_title, test_ingredients, test_targets)
