@@ -80,20 +80,6 @@ class Solver():
 		self.end_instructions_classifier = EndInstructionsClassifier(instr_embed_dim = self.instructions_hidden_dim, hidden_dim = self.binary_MLP_hidden_dim).to(device)
 
 
-		# OPTIMIZERS
-
-		self.title_encoder_optimizer = optim.Adam(self.title_encoder.parameters())
-		self.ingredients_encoder_optimizer = optim.Adam(self.ingredients_encoder.parameters())
-
-		self.instructions_decoder_optimizer = optim.Adam(self.instructions_decoder.parameters())
-		self.end_instructions_classifier_optimizer = optim.Adam(self.end_instructions_classifier.parameters())
-		#self.instr_hidden2input_optimizer = optim.Adam(self.instr_hidden2input.parameters())
-
-		# LOSS FUNCTIONS
-
-		self.decoder_criterion = nn.NLLLoss()
-		self.end_instr_criterion = nn.NLLLoss()
-
 		# LOAD PARAMETERS IF POSSIBLE
 
 		if(self.load_from_path is not None):

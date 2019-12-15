@@ -77,9 +77,9 @@ class IngredientsEncoder(torch.nn.Module):
 
 			# Retrieve final hidden state representing encoding for ingredient i
 			single_ingr_output , h = self.single_ingr_encoder(ingr)
-
+			
 			# Squeeze and append
-			h = torch.squeeze(h)
+			h = torch.squeeze(h,0)
 			inputs.append(h)
 
 			single_ingr_outputs.append(single_ingr_output)
