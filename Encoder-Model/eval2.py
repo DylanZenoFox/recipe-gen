@@ -198,9 +198,9 @@ class Solver():
 
 				for batch in batches:
 
-					if("cookie" in self.lang.indices2string(batch[0][0].tolist()) or 
-						"cake" in self.lang.indices2string(batch[0][0].tolist()) or 
-						"brownie" in self.lang.indices2string(batch[0][0].tolist())):
+					if("salad" in self.lang.indices2string(batch[0][0].tolist())): 
+						#"cake" in self.lang.indices2string(batch[0][0].tolist()) or 
+						#"brownie" in self.lang.indices2string(batch[0][0].tolist())):
 
 						iters += 1
 
@@ -229,16 +229,17 @@ class Solver():
 
 						print("DECODED INSTRUCTIONS:")
 
+						d = [decoded_instructions[0]]
+
 						for i in range(len(decoded_instructions)):
 
-							if(i >= len(decoded_instructions)):
-								continue
+							if(i > 0 and decoded_instructions[i][0] != decoded_instructions[i-1][0]):
+								d.append(decoded_instructions[i])
 
 
-							if(i > 0 and decoded_instructions[i][0] == decoded_instructions[i-1][0]):
-								del(decoded_instructions[i])
-								i = i-1
-								continue
+						decoded_instructions = d
+
+						for i in range(len(decoded_instructions)):
 
 							if(1 in decoded_instructions[i][0]):
 
@@ -261,7 +262,6 @@ class Solver():
 
 								if(wrd == EOS_Token):
 									break
-
 
 						#print([ref])
 						#print(hyp)
@@ -384,7 +384,7 @@ class Solver():
 
 if(__name__ == '__main__'):
 
-	test = Solver(load_from_path = './model_params/test2')
+	test = Solver(load_from_path = './model_params/updated_train_checkpoint2')
 
 
 	#loss_per_instr = test.train_example(test_title, test_ingredients, test_targets)
