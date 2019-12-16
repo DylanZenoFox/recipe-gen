@@ -222,7 +222,18 @@ class Solver():
 
 						print("DECODED INSTRUCTIONS:")
 
+
+						print(len(decoded_instructions))
 						for i in range(len(decoded_instructions)):
+
+							if(i >= len(decoded_instructions)):
+								continue
+
+
+							if(i > 0 and decoded_instructions[i][0] == decoded_instructions[i-1][0]):
+								del(decoded_instructions[i])
+								i = i-1
+								continue
 
 							if(1 in decoded_instructions[i][0]):
 
