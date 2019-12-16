@@ -213,6 +213,13 @@ class Solver():
 
 						print("RECIPE: " + self.lang.indices2string(batch[0][0].tolist()))
 
+						print("INGREDIENTS:")
+
+						ingredients = batch[1]
+
+						for i in range(len(ingredients)):
+							print(str(i) + ": " + self.lang.indices2string(ingredients[i][0].tolist()))
+
 						print("ACTUAL INSTRUCTIONS:")
 
 						instructions = batch[2]
@@ -222,8 +229,6 @@ class Solver():
 
 						print("DECODED INSTRUCTIONS:")
 
-
-						print(len(decoded_instructions))
 						for i in range(len(decoded_instructions)):
 
 							if(i >= len(decoded_instructions)):
