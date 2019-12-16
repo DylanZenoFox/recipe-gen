@@ -197,66 +197,71 @@ class Solver():
 
 
 				for batch in batches:
-					iters += 1
 
-					# DYLAN!! This is where the code fails atm
+					if("cookie" in self.lang.indices2string(batch[0][0].tolist()) or 
+						"cake" in self.lang.indices2string(batch[0][0].tolist()) or 
+						"brownie" in self.lang.indices2string(batch[0][0].tolist())):
 
-					#loss, decoded_instructions = self.train_example(title_input, ingredients_input, instructions_input)
-					decoded_instructions = self.evaluate(batch)
+						iters += 1
 
-					print("ITER: " + str(iters*self.batch_size))
+						# DYLAN!! This is where the code fails atm
 
-					print("RECIPE: " + self.lang.indices2string(batch[0][0].tolist()))
+						#loss, decoded_instructions = self.train_example(title_input, ingredients_input, instructions_input)
+						decoded_instructions = self.evaluate(batch)
 
-					print("ACTUAL INSTRUCTIONS:")
+						print("ITER: " + str(iters*self.batch_size))
 
-					instructions = batch[2]
+						print("RECIPE: " + self.lang.indices2string(batch[0][0].tolist()))
 
-					for i in range(len(instructions)):
-						print(str(i) + ": " + self.lang.indices2string(instructions[i][0].tolist()))
+						print("ACTUAL INSTRUCTIONS:")
 
-					print("DECODED INSTRUCTIONS:")
+						instructions = batch[2]
 
-					for i in range(len(decoded_instructions)):
+						for i in range(len(instructions)):
+							print(str(i) + ": " + self.lang.indices2string(instructions[i][0].tolist()))
 
-						if(1 in decoded_instructions[i][0]):
+						print("DECODED INSTRUCTIONS:")
 
-							print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i][0][:decoded_instructions[i][0].index(EOS_Token) + 1]))
-						else:
-							print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i][0]))
+						for i in range(len(decoded_instructions)):
 
-					print(" ")
+							if(1 in decoded_instructions[i][0]):
 
-					ref = []
+								print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i][0][:decoded_instructions[i][0].index(EOS_Token) + 1]))
+							else:
+								print(str(i) + ": " + self.lang.indices2string(decoded_instructions[i][0]))
 
-					for instr in instructions:
-						for wrd in instr[0].tolist():
-							ref.append(wrd)
+						print(" ")
 
-					hyp = []
-					for d_instr in decoded_instructions:
-						for wrd in d_instr[0]:
-							hyp.append(wrd)
+						ref = []
 
-							if(wrd == EOS_Token):
-								break
+						for instr in instructions:
+							for wrd in instr[0].tolist():
+								ref.append(wrd)
+
+						hyp = []
+						for d_instr in decoded_instructions:
+							for wrd in d_instr[0]:
+								hyp.append(wrd)
+
+								if(wrd == EOS_Token):
+									break
 
 
-					#print([ref])
-					#print(hyp)
+						#print([ref])
+						#print(hyp)
 
-					ref_list.append([ref])
-					hyp_list.append(hyp)
+						ref_list.append([ref])
+						hyp_list.append(hyp)
 
 				# 	print("==============================================================================")
 
-					if(iters == 100):
-						break
+					if(iters == 1000):
+						smooth = nltk.translate.bleu_score.SmoothingFunction()
+						print(" CORPUS BLEU SCORE: " + str(nltk.translate.bleu_score.corpus_bleu(ref_list,hyp_list, smoothing_function=smooth.method1)))
 
-				smooth = nltk.translate.bleu_score.SmoothingFunction()
-				print(" CORPUS BLEU SCORE: " + str(nltk.translate.bleu_score.corpus_bleu(ref_list,hyp_list, smoothing_function=smooth.method1)))
+						print("==============================================================================")
 
-				print("==============================================================================")
+						return
 
 
 	def load_model(self,model_params_path):
