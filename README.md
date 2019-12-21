@@ -11,7 +11,7 @@ Currently contains code for online training of algorithm
 
 ## "Batchify" Branch
 
-Currently contains code for batching implemenation of algoithm
+Currently contains code for batching implemenation of algorithm
 
 
 
