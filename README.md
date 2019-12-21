@@ -1,5 +1,5 @@
 # Hierarchical Seq2Seq Generation for Recipes 
-Recipe Generation project for UMD CMSC723 - Computational Linguistics 1 
+Hierarchical Seq2Seq Recipe Generation project for UMD CMSC723 - Computational Linguistics 1 
 
 ## Abstract
 
